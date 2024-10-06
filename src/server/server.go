@@ -6,8 +6,9 @@ import (
 	"time"
 )
 
+var Clients = make(map[string]*net.UDPAddr)
+
 func StartServer(serverPort int) error {
-	clients := make(map[string]*net.UDPAddr)
 	metricsMap := make(map[string]string)
 
 	addr := net.UDPAddr{
@@ -31,7 +32,7 @@ func StartServer(serverPort int) error {
 		}
 
 		metrics := string(buf[:n])
-		clients[remoteAddr.String()] = remoteAddr
+		Clients[remoteAddr.String()] = remoteAddr
 
 		metricsMap[remoteAddr.String()] = metrics
 
@@ -43,7 +44,7 @@ func StartServer(serverPort int) error {
 			fmt.Printf("Metrics from %s: %s\n", addrStr, metricsData)
 		}
 
-		for addrStr, addrPtr := range clients {
+		for addrStr, addrPtr := range Clients {
 			if addrStr != remoteAddr.String() {
 				_, err := conn.WriteToUDP([]byte(metrics), addrPtr)
 				if err != nil {
