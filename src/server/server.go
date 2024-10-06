@@ -33,16 +33,17 @@ func StartServer(serverPort int) error {
 		}
 
 		metrics := string(buf[:n])
+		if strings.Contains(metrics, "@") {
+			metricsMap[remoteAddr.String()] = metrics
 
-		metricsMap[remoteAddr.String()] = metrics
+			fmt.Print("\033[H\033[2J")
+			fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))
+			fmt.Println("Metrics from all machines:")
 
-		fmt.Print("\033[H\033[2J")
-		fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))
-		fmt.Println("Metrics from all machines:")
-
-		for addrStr, metricsData := range metricsMap {
-			fmt.Printf("Metrics from %s:\n", addrStr)
-			formatAndPrintMetrics(metricsData)
+			for addrStr, metricsData := range metricsMap {
+				fmt.Printf("Metrics from %s:\n", addrStr)
+				formatAndPrintMetrics(metricsData)
+			}
 		}
 
 		fmt.Println("Clients:", Clients)
