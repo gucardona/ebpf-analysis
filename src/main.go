@@ -5,6 +5,7 @@ import (
 	"github.com/gucardona/ga-redes-udp/src/client"
 	"github.com/gucardona/ga-redes-udp/src/server"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -17,12 +18,19 @@ func main() {
 	flag.IntVar(&serverPort, "port", 8443, "UDP server port")
 	flag.Parse()
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	go func() {
 		if err := server.StartServer(serverPort); err != nil {
 			log.Fatalf("Failed to start server: %s", err)
 		}
+		
+		wg.Done()
 	}()
-	
+
+	wg.Wait()
+
 	if err := client.StartClient(serverPort, messageInterval); err != nil {
 		log.Fatalf("Failed to start client: %s", err)
 	}
