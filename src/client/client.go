@@ -28,19 +28,6 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 		return fmt.Errorf("error sending register message: %s", err)
 	}
 
-	go func() {
-		buf := make([]byte, 2048)
-		for {
-			n, _, err := connDiscovery.ReadFromUDP(buf)
-			if err != nil {
-				fmt.Println("Error receiving discovery message:", err)
-				continue
-			}
-			newClient := string(buf[:n])
-			fmt.Printf("New client discovered: %s\n", newClient)
-		}
-	}()
-
 	serverAddr := net.UDPAddr{
 		Port: serverPort,
 		IP:   net.ParseIP("127.0.0.1"),
