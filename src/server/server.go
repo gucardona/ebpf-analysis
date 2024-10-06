@@ -3,12 +3,15 @@ package server
 import (
 	"errors"
 	"fmt"
+	"github.com/gucardona/ga-redes-udp/src/client"
+	"log"
 	"net"
 	"strings"
 	"time"
 )
 
 const (
+	messageInterval       = 5 * time.Second
 	discoveryErrorMessage = "discovery server is already running on port 9999"
 	discoveryPort         = 9999
 )
@@ -32,6 +35,10 @@ func StartServer(serverPort int) error {
 		if !strings.Contains(err.Error(), discoveryErrorMessage) {
 			return fmt.Errorf("error starting discovery server: %s", err)
 		}
+	}
+
+	if err := client.StartClient(serverPort, messageInterval); err != nil {
+		log.Fatalf("Failed to start client: %s", err)
 	}
 
 	buf := make([]byte, 2048)
