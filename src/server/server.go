@@ -68,11 +68,11 @@ func formatAndPrintMetrics(metricsData string) {
 	trim := strings.TrimSpace(metricsData)
 	lines := strings.Split(trim, "\n")
 
-	for line := range lines {
+	lines = lines[1:]
+
+	for _, line := range lines {
 		fmt.Println(line)
 	}
-
-	lines = lines[1:]
 
 	fmt.Println(lines)
 
