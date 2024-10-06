@@ -47,9 +47,11 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 	}
 	defer conn.Close()
 
+	// Listen for responses from the discovery server
+	go listenForDiscoveryResponses(discoveryConn)
+
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Select a metric to send (cpu/mem/gpu):")
-	fmt.Println(" - cpu: The command is continuously counting how many times different processes are scheduled by the Linux kernel.")
 	metricType, _ := reader.ReadString('\n')
 	metricType = strings.TrimSpace(metricType)
 
@@ -66,6 +68,20 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 		}
 
 		time.Sleep(messageInterval)
+	}
+}
+
+// listenForDiscoveryResponses listens for any messages from the discovery server.
+func listenForDiscoveryResponses(conn *net.UDPConn) {
+	buf := make([]byte, 2048)
+	for {
+		n, _, err := conn.ReadFromUDP(buf)
+		if err != nil {
+			fmt.Println("Error receiving from discovery server:", err)
+			return // Exit on error
+		}
+		clientInfo := string(buf[:n])
+		fmt.Printf("Received from discovery server: %s\n", clientInfo)
 	}
 }
 
