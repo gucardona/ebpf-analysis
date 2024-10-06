@@ -20,10 +20,8 @@ func StartServer(serverPort int) error {
 
 	buf := make([]byte, 2048) // Increase buffer size to accommodate larger messages
 
-	fmt.Println("Server is listening on port:", serverPort)
-	fmt.Printf("%-25s %-50s\n", "Timestamp", "Metrics") // Header for the dashboard
+	var metricsList []string // Store received metrics
 
-	i := 0
 	for {
 		n, _, err := conn.ReadFromUDP(buf)
 		if err != nil {
@@ -34,12 +32,15 @@ func StartServer(serverPort int) error {
 		timestamp := time.Now().Format(time.RFC3339)
 		metrics := string(buf[:n])
 
-		// Print the received metrics in a structured format
-		if i == 1 {
-			fmt.Printf("%-25s %-50s\n", "Timestamp", "Metrics") // Header for the dashboard
-		}
-		fmt.Printf("%-25s %-50s\n", timestamp, metrics)
+		// Append received metrics to the list
+		metricsList = append(metricsList, metrics)
 
-		i++
+		// Clear the previous output using ANSI escape codes
+		fmt.Print("\033[H\033[2J") // Clear terminal
+
+		// Print the last update timestamp and metrics
+		fmt.Printf("Last update: %s\n", timestamp)
+		fmt.Println("Metrics:")
+		fmt.Println(metrics)
 	}
 }
