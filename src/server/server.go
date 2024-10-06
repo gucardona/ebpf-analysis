@@ -65,19 +65,27 @@ func formatAndPrintMetrics(metricsData string) {
 	fmt.Printf("%-30s %s\n", "Metric", "Count")
 	fmt.Println(strings.Repeat("-", 40))
 
-	trim := strings.TrimSpace(metricsData)
-	lines := strings.Split(trim, "\n")
-	lines = lines[1:]
+	// Trim leading/trailing whitespace
+	trimmed := strings.TrimSpace(metricsData)
 
-	fmt.Println(lines)
+	// Split the data by space to separate the metrics
+	metrics := strings.Split(trimmed, " @[")
 
-	//for _, metric := range metricsData {
-	//	nameIndex := strings.Index(metric, "@[")
-	//	quantIndex := strings.Index(metric, "]: ")
-	//
-	//	name := metric[nameIndex+2 : quantIndex]
-	//	quant := metric[quantIndex+3:]
-	//
-	//	fmt.Printf("%-30s %s\n", name, quant)
-	//}
+	for i, metric := range metrics {
+		// Handle the first metric if it starts with '@['
+		if i == 0 && strings.HasPrefix(metric, "@[") {
+			metric = metric[2:] // remove the "@[" from the start of the string
+		}
+
+		// Find the index of "]: " to extract metric name and count
+		quantIndex := strings.Index(metric, "]: ")
+		if quantIndex != -1 {
+			// Get metric name and count
+			name := metric[:quantIndex]
+			quant := metric[quantIndex+3:]
+
+			// Print formatted metric name and count
+			fmt.Printf("%-30s %s\n", name, quant)
+		}
+	}
 }
