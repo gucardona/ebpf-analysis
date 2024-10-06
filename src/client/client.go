@@ -72,19 +72,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
 
-		output := string(out)
-		lines := strings.Split(output, "\n")
-
-		var filteredOutput []string
-		for _, line := range lines {
-			if !strings.Contains(line, "probes...") {
-				filteredOutput = append(filteredOutput, line)
-			}
-		}
-
-		strings.TrimSpace(filteredOutput[0])
-
-		return []byte(strings.Join(filteredOutput, ",")), nil
+		return out, nil
 
 	default:
 		return nil, fmt.Errorf("unknown metric type: %s", metricType)
