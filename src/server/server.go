@@ -10,7 +10,7 @@ import (
 var Clients []int
 
 func StartServer(serverPort int) error {
-	metricsMap := make(map[string][]string)
+	metricsMap := make(map[string]string)
 
 	addr := net.UDPAddr{
 		Port: serverPort,
@@ -34,7 +34,7 @@ func StartServer(serverPort int) error {
 
 		metrics := string(buf[:n])
 
-		metricsMap[remoteAddr.String()] = append(metricsMap[remoteAddr.String()], metrics)
+		metricsMap[remoteAddr.String()] = metrics
 
 		fmt.Print("\033[H\033[2J")
 		fmt.Printf("Last update: %s", time.Now().Format(time.RFC3339))
@@ -61,17 +61,20 @@ func StartServer(serverPort int) error {
 	}
 }
 
-func formatAndPrintMetrics(metricsData []string) {
+func formatAndPrintMetrics(metricsData string) {
 	fmt.Printf("%-30s %s\n", "Metric", "Count")
 	fmt.Println(strings.Repeat("-", 40))
 
-	for _, metric := range metricsData {
-		nameIndex := strings.Index(metric, "@[")
-		quantIndex := strings.Index(metric, "]: ")
+	trim := strings.TrimSpace(metricsData)
+	fmt.Println(trim)
 
-		name := metric[nameIndex+2 : quantIndex]
-		quant := metric[quantIndex+3:]
-
-		fmt.Printf("%-30s %s\n", name, quant)
-	}
+	//for _, metric := range metricsData {
+	//	nameIndex := strings.Index(metric, "@[")
+	//	quantIndex := strings.Index(metric, "]: ")
+	//
+	//	name := metric[nameIndex+2 : quantIndex]
+	//	quant := metric[quantIndex+3:]
+	//
+	//	fmt.Printf("%-30s %s\n", name, quant)
+	//}
 }
