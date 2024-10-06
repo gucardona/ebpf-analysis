@@ -37,7 +37,7 @@ func StartServer(serverPort int) error {
 		metricsMap[remoteAddr.String()] = append(metricsMap[remoteAddr.String()], metrics)
 
 		fmt.Print("\033[H\033[2J")
-		fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))
+		fmt.Printf("Last update: %s", time.Now().Format(time.RFC3339))
 		fmt.Println("Metrics from all machines:")
 
 		for addrStr, metricsData := range metricsMap {
@@ -46,15 +46,15 @@ func StartServer(serverPort int) error {
 		}
 
 		fmt.Println("Clients:", Clients)
-		for _, port := range Clients {
-			if port != serverPort {
-				fmt.Println(port)
+		for i := 0; i < len(Clients); i++ {
+			if Clients[i] != serverPort {
+				fmt.Println(Clients[i])
 				_, err := conn.WriteToUDP([]byte(metrics), &net.UDPAddr{
-					Port: port,
+					Port: Clients[i],
 					IP:   net.ParseIP("127.0.0.1"),
 				})
 				if err != nil {
-					fmt.Printf("Error sending data to client %d: %s\n", port, err)
+					fmt.Printf("Error sending data to client %d: %s", Clients[i], err)
 				}
 			}
 		}
