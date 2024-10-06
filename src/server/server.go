@@ -37,7 +37,7 @@ func StartServer(serverPort int) error {
 		metricsMap[remoteAddr.String()] = metrics
 
 		fmt.Print("\033[H\033[2J")
-		fmt.Printf("Last update: %s", time.Now().Format(time.RFC3339))
+		fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))
 		fmt.Println("Metrics from all machines:")
 
 		for addrStr, metricsData := range metricsMap {
@@ -47,6 +47,10 @@ func StartServer(serverPort int) error {
 
 		fmt.Println("Clients:", Clients)
 		for i := 0; i < len(Clients); i++ {
+			if !arrayContains(Clients, serverPort) {
+				Clients = append(Clients, serverPort)
+			}
+			
 			if Clients[i] != serverPort {
 				fmt.Println(Clients[i])
 				_, err := conn.WriteToUDP([]byte(metrics), &net.UDPAddr{
@@ -79,4 +83,13 @@ func formatAndPrintMetrics(metricsData string) {
 
 		fmt.Printf("%-30s %s\n", name, quant)
 	}
+}
+
+func arrayContains(slice []int, item int) bool {
+	for _, element := range slice {
+		if element == item {
+			return true
+		}
+	}
+	return false
 }
