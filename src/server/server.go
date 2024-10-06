@@ -34,6 +34,8 @@ func StartServer(serverPort int) error {
 		metrics := string(buf[:n])
 		Clients[remoteAddr.String()] = remoteAddr
 
+		fmt.Println(Clients)
+
 		metricsMap[remoteAddr.String()] = metrics
 
 		fmt.Print("\033[H\033[2J")
