@@ -3,38 +3,45 @@ package client
 import (
 	"bufio"
 	"fmt"
-	"github.com/gucardona/ga-redes-udp/src/ebpf/cpu"
+	"log"
 	"net"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
 
+// StartClient starts the UDP client to send metrics to the server
 func StartClient(serverPort int, messageInterval time.Duration) error {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Select a metric to send (cpu/mem/gpu):")
+	fmt.Println(" - cpu: The command is continuously counting how many times different processes are scheduled by the Linux kernel.")
 	metricType, _ := reader.ReadString('\n')
 	metricType = strings.TrimSpace(metricType)
 
-	var collectMetric func() (string, error)
+	var cmd *exec.Cmd
 
 	switch metricType {
 	case "cpu":
-		// Initialize CPU metrics collection
-		if err := cpu.InitCPUMetricsCollection(); err != nil {
-			return fmt.Errorf("error initializing CPU metrics: %s", err)
-		}
-		collectMetric = cpu.CollectCPUMetrics
-	//case "mem":
-	//	collectMetric = metrics.CollectMemoryMetrics
-	//case "gpu":
-	//	collectMetric = metrics.CollectGPUMetrics
+		cmd = exec.Command(
+			"sudo",
+			"bpftrace",
+			"-e",
+			"kprobe:schedule { @[comm] = count(); } interval:s:1 { print(@); clear(@); exit(); }")
+
 	default:
-		fmt.Println("Invalid metric type, defaulting to CPU metrics")
-		if err := cpu.InitCPUMetricsCollection(); err != nil {
-			return fmt.Errorf("error initializing CPU metrics: %s", err)
-		}
-		collectMetric = cpu.CollectCPUMetrics
+		log.Fatal("Invalid metric type...")
+	}
+
+	// Get the output pipe for real-time metric collection
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("failed to get stdout pipe: %s", err)
+	}
+
+	// Start the BPFtrace command
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start BPFtrace: %s", err)
 	}
 
 	serverAddr := net.UDPAddr{
@@ -48,23 +55,25 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 	}
 	defer conn.Close()
 
-	for {
-		// Collect the metric (this can be CPU, memory, GPU)
-		message, err := collectMetric()
-		if err != nil {
-			fmt.Println("Error collecting metric:", err)
-			continue
-		}
-
-		// Send the collected metric over UDP
-		_, err = conn.Write([]byte(message))
-		if err != nil {
-			fmt.Println("Error sending data:", err)
-			continue
-		}
-		fmt.Println("Metrics sent:", message)
-
-		// Sleep for the interval before sending the next metric
-		time.Sleep(messageInterval)
+	// Read all lines from bpftrace output
+	scanner := bufio.NewScanner(stdout)
+	var allMetrics strings.Builder
+	for scanner.Scan() {
+		line := scanner.Text()
+		allMetrics.WriteString(line + "\n")
 	}
+
+	// Send the accumulated metrics over UDP
+	message := allMetrics.String()
+	if _, err = conn.Write([]byte(message)); err != nil {
+		fmt.Println("Error sending data:", err)
+		return err
+	}
+	fmt.Println("Metrics sent:\n", message)
+
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("failed to wait for command completion: %s", err)
+	}
+
+	return nil
 }
