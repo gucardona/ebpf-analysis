@@ -70,18 +70,25 @@ func formatAndPrintMetrics(metricsData string) {
 	fmt.Println(strings.Repeat("-", 40))
 
 	trim := strings.TrimSpace(metricsData)
+
 	lines := strings.Split(trim, "\n")
 
-	lines = lines[1:]
+	if len(lines) > 1 {
+		lines = lines[1:]
+	}
 
 	for _, line := range lines {
 		nameIndex := strings.Index(line, "@[")
 		quantIndex := strings.Index(line, "]: ")
 
-		name := line[nameIndex+2 : quantIndex]
-		quant := line[quantIndex+3:]
+		if nameIndex != -1 && quantIndex != -1 {
+			name := line[nameIndex+2 : quantIndex]
+			quant := line[quantIndex+3:]
 
-		fmt.Printf("%-30s %s\n", name, quant)
+			fmt.Printf("%-30s %s\n", name, quant)
+		} else {
+			fmt.Printf("Invalid line format: %s\n", line)
+		}
 	}
 }
 
