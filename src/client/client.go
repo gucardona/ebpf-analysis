@@ -23,7 +23,7 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 	}
 	defer connDiscovery.Close()
 
-	_, err = connDiscovery.Write([]byte("register"))
+	_, err = connDiscovery.Write([]byte(fmt.Sprintf("register-%d", serverPort)))
 	if err != nil {
 		return fmt.Errorf("error sending register message: %s", err)
 	}

@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -26,28 +27,31 @@ func StartDiscoveryServer() error {
 	}
 	defer conn.Close()
 
-	Clients = make(map[string]*net.UDPAddr)
+	Clients = []int{}
 	fmt.Println("Discovery server started. Listening for messages...")
 
 	buf := make([]byte, 2048)
 
 	for {
 		n, remoteAddr, err := conn.ReadFromUDP(buf)
-		fmt.Println(">>> ", string(buf[:n]))
 		if err != nil {
 			fmt.Println("Error receiving discovery message:", err)
-			continue // Go to the next iteration of the loop
+			continue
 		}
 
 		message := string(buf[:n])
 		fmt.Println("Received message:", message)
-		if strings.Contains(message, "register") {
-			Clients[remoteAddr.String()] = remoteAddr
+		if strings.Contains(message, "register-") {
+			serverPort, _ := strings.CutPrefix(message, "register-")
+			port, _ := strconv.Atoi(serverPort)
+			Clients = append(Clients, port)
 			fmt.Printf("New client registered: %s\n", remoteAddr.String())
 
-			// Notify all clients about the new client
-			for _, clientAddr := range Clients {
-				_, err := conn.WriteToUDP([]byte(remoteAddr.String()), clientAddr)
+			for _, port := range Clients {
+				_, err := conn.WriteToUDP([]byte(remoteAddr.String()), &net.UDPAddr{
+					Port: port,
+					IP:   net.ParseIP("127.0.0.1"),
+				})
 				if err != nil {
 					fmt.Println("Error sending discovery message to client:", err)
 				}
