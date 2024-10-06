@@ -23,6 +23,7 @@ func StartServer(serverPort int) error {
 	fmt.Println("Server is listening on port:", serverPort)
 	fmt.Printf("%-25s %-50s\n", "Timestamp", "Metrics") // Header for the dashboard
 
+	i := 0
 	for {
 		n, _, err := conn.ReadFromUDP(buf)
 		if err != nil {
@@ -34,10 +35,11 @@ func StartServer(serverPort int) error {
 		metrics := string(buf[:n])
 
 		// Print the received metrics in a structured format
-		if metrics == "" {
+		if i == 1 {
 			fmt.Printf("%-25s %-50s\n", "Timestamp", "Metrics") // Header for the dashboard
-		} else {
-			fmt.Printf("%-25s %-50s\n", timestamp, metrics)
 		}
+		fmt.Printf("%-25s %-50s\n", timestamp, metrics)
+
+		i++
 	}
 }

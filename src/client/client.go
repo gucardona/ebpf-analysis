@@ -55,53 +55,55 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 	}
 	defer conn.Close()
 
+	// Prepare a slice to accumulate metrics
+	var allMetrics []string
+
 	// Start a goroutine to read and send metrics periodically
 	go func() {
 		scanner := bufio.NewScanner(stdout)
-		var accumulatedMetrics strings.Builder
 
 		for {
 			if scanner.Scan() {
-				line := scanner.Text()
-				// Filter out "Attaching probes..." and empty lines
-				if strings.Contains(line, "Attaching probes") || strings.TrimSpace(line) == "" {
-					continue
-				}
+				// Read the latest output from bpftrace
+				metric := scanner.Text()
+				allMetrics = append(allMetrics, metric) // Accumulate metrics
 
-				// Format the line to be aligned
-				// Assuming the format is @[name]: count
-				parts := strings.Split(line, ":")
-				if len(parts) == 2 {
-					metricName := strings.TrimSpace(parts[0])
-					metricCount := strings.TrimSpace(parts[1])
-					message := fmt.Sprintf("%-25s: %s\n", metricName, metricCount)
+				// Format the accumulated metrics for sending
+				metricsToSend := formatMetrics(allMetrics)
 
-					// Accumulate the metrics
-					accumulatedMetrics.WriteString(message)
-				}
-			}
-
-			// After collecting metrics for the interval, send the accumulated metrics
-			if accumulatedMetrics.Len() > 0 {
 				// Send the accumulated metrics over UDP
-				if _, err := conn.Write([]byte(accumulatedMetrics.String())); err != nil {
+				if _, err := conn.Write([]byte(metricsToSend)); err != nil {
 					fmt.Println("Error sending data:", err)
 					return
 				}
 
-				// Clear the accumulated metrics for the next interval
-				accumulatedMetrics.Reset()
-			}
+				fmt.Println("Metrics sent:\n", metricsToSend)
 
-			// Sleep for the message interval
-			time.Sleep(messageInterval)
+				// Sleep for the message interval
+				time.Sleep(messageInterval)
+			} else {
+				// Exit if there's an error reading from stdout
+				if err := scanner.Err(); err != nil {
+					fmt.Println("Error reading from stdout:", err)
+					break
+				}
+			}
 		}
 	}()
 
-	// Wait for the BPFtrace command to complete
+	// Wait for the bpftrace command to complete (if it ever does)
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf("failed to wait for command completion: %s", err)
 	}
 
 	return nil
+}
+
+// formatMetrics formats the accumulated metrics into a string
+func formatMetrics(metrics []string) string {
+	var formatted strings.Builder
+	for _, metric := range metrics {
+		formatted.WriteString(metric + "\n") // Add each metric on a new line
+	}
+	return formatted.String()
 }
