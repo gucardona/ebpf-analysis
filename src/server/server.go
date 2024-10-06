@@ -9,7 +9,7 @@ import (
 var Clients = make(map[string]*net.UDPAddr)
 
 func StartServer(serverPort int) error {
-	metricsMap := make(map[string]string)
+	metricsMap := make(map[string][]string)
 
 	addr := net.UDPAddr{
 		Port: serverPort,
@@ -34,23 +34,23 @@ func StartServer(serverPort int) error {
 		metrics := string(buf[:n])
 		Clients[remoteAddr.String()] = remoteAddr
 
-		fmt.Println(Clients)
-
-		metricsMap[remoteAddr.String()] = metrics
+		// Accumulate metrics for each client
+		metricsMap[remoteAddr.String()] = append(metricsMap[remoteAddr.String()], metrics)
 
 		fmt.Print("\033[H\033[2J")
 		fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))
 		fmt.Println("Metrics from all machines:")
 
 		for addrStr, metricsData := range metricsMap {
-			fmt.Printf("Metrics from %s: %s\n", addrStr, metricsData)
+			fmt.Printf("Metrics from %s: %v\n", addrStr, metricsData)
 		}
 
+		fmt.Println("Clients:", Clients)
 		for addrStr, addrPtr := range Clients {
 			if addrStr != remoteAddr.String() {
 				_, err := conn.WriteToUDP([]byte(metrics), addrPtr)
 				if err != nil {
-					fmt.Println("Error sending data to client:", err)
+					fmt.Printf("Error sending data to client %s: %s\n", addrStr, err)
 				}
 			}
 		}

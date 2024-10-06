@@ -67,7 +67,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 			"sudo",
 			"bpftrace",
 			"-e",
-			"kprobe:schedule { @[comm] = count(); } interval:s:1 { print(@); clear(@); exit(); }").Output()
+			"profile:hz:99 { @[$comm] = count(); }").Output()
 		if err != nil {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
