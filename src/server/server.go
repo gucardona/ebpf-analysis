@@ -49,7 +49,6 @@ func StartServer(serverPort int) error {
 			fmt.Println(strings.Repeat("=", 40))
 		}
 
-		fmt.Println("Clients:", Clients)
 		if !ArrayContains(Clients, serverPort) {
 			Clients = append(Clients, serverPort)
 		}

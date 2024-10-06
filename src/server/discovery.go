@@ -60,6 +60,7 @@ func StartDiscoveryServer() error {
 			}
 
 			for _, clientPort := range Clients {
+				fmt.Println("clients: ", Clients)
 				if clientPort != port {
 					_, err := conn.WriteToUDP([]byte(fmt.Sprintf("new-client-%d", port)), &net.UDPAddr{
 						Port: clientPort,
