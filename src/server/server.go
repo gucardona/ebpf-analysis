@@ -71,18 +71,12 @@ func formatAndPrintMetrics(metricsData string) {
 	lines = lines[1:]
 
 	for _, line := range lines {
-		fmt.Println(line)
+		nameIndex := strings.Index(line, "@[")
+		quantIndex := strings.Index(line, "]: ")
+
+		name := line[nameIndex+2 : quantIndex]
+		quant := line[quantIndex+3:]
+
+		fmt.Printf("%-30s %s\n", name, quant)
 	}
-
-	fmt.Println(lines)
-
-	//for _, metric := range metricsData {
-	//	nameIndex := strings.Index(metric, "@[")
-	//	quantIndex := strings.Index(metric, "]: ")
-	//
-	//	name := metric[nameIndex+2 : quantIndex]
-	//	quant := metric[quantIndex+3:]
-	//
-	//	fmt.Printf("%-30s %s\n", name, quant)
-	//}
 }
