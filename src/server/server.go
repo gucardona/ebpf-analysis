@@ -66,7 +66,10 @@ func formatAndPrintMetrics(metricsData string) {
 	fmt.Println(strings.Repeat("-", 40))
 
 	trim := strings.TrimSpace(metricsData)
-	fmt.Println(trim)
+	lines := strings.Split(trim, "\n")
+	lines = lines[1:]
+
+	fmt.Println(lines)
 
 	//for _, metric := range metricsData {
 	//	nameIndex := strings.Index(metric, "@[")
