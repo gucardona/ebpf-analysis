@@ -1,10 +1,8 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -27,12 +25,6 @@ func StartServer(serverPort int) error {
 		return fmt.Errorf("error starting server: %s", err)
 	}
 	defer conn.Close()
-
-	if err := startDiscoveryServer(clients); err != nil {
-		if !strings.Contains(err.Error(), discoveryErrorMessage) {
-			return fmt.Errorf("error starting discovery server: %s", err)
-		}
-	}
 
 	buf := make([]byte, 2048)
 
@@ -64,39 +56,5 @@ func StartServer(serverPort int) error {
 				}
 			}
 		}
-	}
-}
-
-func startDiscoveryServer(clients map[string]*net.UDPAddr) error {
-	addr := net.UDPAddr{
-		Port: discoveryPort,
-		IP:   net.ParseIP("0.0.0.0"),
-	}
-
-	conn, err := net.ListenUDP("udp", &addr)
-	if err != nil {
-		var netErr *net.OpError
-		if errors.As(err, &netErr) && netErr.Op == "listen" {
-			return fmt.Errorf(discoveryErrorMessage)
-		}
-		return fmt.Errorf("error starting discovery server: %s", err)
-	}
-	defer conn.Close()
-
-	fmt.Printf("Discovery server is running on port %d\n", discoveryPort)
-
-	for {
-		buf := make([]byte, 2048)
-		n, remoteAddr, err := conn.ReadFromUDP(buf)
-		if err != nil {
-			fmt.Println("Error receiving data:", err)
-			continue
-		}
-
-		clientInfo := string(buf[:n])
-		fmt.Printf("Received registration from: %s, Info: %s\n", remoteAddr.String(), clientInfo)
-
-		clients[remoteAddr.String()] = remoteAddr
-		fmt.Println(clients[remoteAddr.String()])
 	}
 }
