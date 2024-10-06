@@ -3,13 +3,17 @@ package server
 import (
 	"fmt"
 	"net"
+	"os"
 	"time"
 )
 
-func StartServer(serverPort int) error {
-	clients := make(map[string]*net.UDPAddr)
-	metricsMap := make(map[string]string) // To store metrics from each client
+const discoveryPort = 9999
 
+func StartServer(serverPort int) error {
+	clients := make(map[string]*net.UDPAddr) // Store discovered clients
+	metricsMap := make(map[string]string)    // Store metrics from each client
+
+	// Setup UDP listener for the main server
 	addr := net.UDPAddr{
 		Port: serverPort,
 		IP:   net.ParseIP("0.0.0.0"),
@@ -20,6 +24,9 @@ func StartServer(serverPort int) error {
 		return fmt.Errorf("error starting server: %s", err)
 	}
 	defer conn.Close()
+
+	// Start discovery server in a separate goroutine
+	go startDiscoveryServer(clients)
 
 	buf := make([]byte, 2048)
 
@@ -55,5 +62,35 @@ func StartServer(serverPort int) error {
 				}
 			}
 		}
+	}
+}
+
+// startDiscoveryServer handles client registration via UDP discovery messages
+func startDiscoveryServer(clients map[string]*net.UDPAddr) {
+	addr := net.UDPAddr{
+		Port: discoveryPort,
+		IP:   net.ParseIP("0.0.0.0"),
+	}
+
+	conn, err := net.ListenUDP("udp", &addr)
+	if err != nil {
+		fmt.Println("Error starting discovery server:", err)
+		os.Exit(1)
+	}
+	defer conn.Close()
+
+	for {
+		buf := make([]byte, 2048)
+		n, remoteAddr, err := conn.ReadFromUDP(buf)
+		if err != nil {
+			fmt.Println("Error receiving data:", err)
+			continue
+		}
+
+		clientInfo := string(buf[:n])
+		fmt.Printf("Received registration from: %s, Info: %s\n", remoteAddr.String(), clientInfo)
+
+		// Register the client address
+		clients[remoteAddr.String()] = remoteAddr
 	}
 }

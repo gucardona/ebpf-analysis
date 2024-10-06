@@ -3,7 +3,6 @@ package client
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -11,12 +10,44 @@ import (
 	"time"
 )
 
+const discoveryPort = 9999
+
 func StartClient(serverPort int, messageInterval time.Duration) error {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Select a metric to send (cpu/mem/gpu):")
-	fmt.Println(" - cpu: The command is continuously counting how many times different processes are scheduled by the Linux kernel.")
-	metricType, _ := reader.ReadString('\n')
-	metricType = strings.TrimSpace(metricType)
+	discoveryAddr := net.UDPAddr{
+		Port: discoveryPort,
+		IP:   net.ParseIP("127.0.0.1"),
+	}
+
+	discoveryConn, err := net.DialUDP("udp", nil, &discoveryAddr)
+	if err != nil {
+		return fmt.Errorf("error connecting to discovery server: %s", err)
+	}
+	defer discoveryConn.Close()
+
+	portInfo := fmt.Sprintf("REGISTER: %d", serverPort)
+	_, err = discoveryConn.Write([]byte(portInfo))
+	if err != nil {
+		return fmt.Errorf("error sending registration: %s", err)
+	}
+
+	clients := make(map[string]*net.UDPAddr)
+
+	go func() {
+		buf := make([]byte, 2048)
+		for {
+			n, addr, err := discoveryConn.ReadFromUDP(buf)
+			if err != nil {
+				fmt.Println("Error receiving from discovery server:", err)
+				continue
+			}
+
+			clientInfo := string(buf[:n])
+			if clientInfo != "" && clientInfo != portInfo {
+				clients[addr.String()] = addr
+				fmt.Printf("Discovered client at: %s\n", addr.String())
+			}
+		}
+	}()
 
 	serverAddr := net.UDPAddr{
 		Port: serverPort,
@@ -25,57 +56,46 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 
 	conn, err := net.DialUDP("udp", nil, &serverAddr)
 	if err != nil {
-		return fmt.Errorf("error starting client: %s", err)
+		return fmt.Errorf("error connecting to server: %s", err)
 	}
 	defer conn.Close()
 
-	switch metricType {
-	case "cpu":
-		go func() {
-			for {
-				out, err := exec.Command(
-					"sudo",
-					"bpftrace",
-					"-e",
-					"kprobe:schedule { @[comm] = count(); } interval:s:1 { print(@); clear(@); exit(); }").Output()
-				if err != nil {
-					fmt.Printf("failed to exec command: %s", err)
-					continue
-				}
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Select a metric to send (cpu/mem/gpu):")
+	fmt.Println(" - cpu: The command is continuously counting how many times different processes are scheduled by the Linux kernel.")
+	metricType, _ := reader.ReadString('\n')
+	metricType = strings.TrimSpace(metricType)
 
-				if err := sendUDP(conn, out); err != nil {
-					fmt.Printf("failed to send udp data: %s", err)
-					continue
-				}
+	for {
+		metrics, err := collectMetrics(metricType)
+		if err != nil {
+			fmt.Println("Error collecting metrics:", err)
+		}
 
-				time.Sleep(messageInterval)
-			}
-		}()
+		_, err = conn.Write(metrics)
+		if err != nil {
+			return fmt.Errorf("error sending data: %s", err)
+		}
 
-	default:
-		log.Fatal("Invalid metric type...")
+		time.Sleep(messageInterval)
 	}
-
-	select {}
 }
 
-func sendUDP(conn net.Conn, metrics []byte) error {
-	metricsStr := string(metrics)
-
-	lines := strings.Split(metricsStr, "\n")
-	var filteredMetrics []string
-	for _, line := range lines {
-		if !strings.Contains(line, "Attaching") {
-			filteredMetrics = append(filteredMetrics, line)
+func collectMetrics(metricType string) ([]byte, error) {
+	switch metricType {
+	case "cpu":
+		out, err := exec.Command(
+			"sudo",
+			"bpftrace",
+			"-e",
+			"kprobe:schedule { @[comm] = count(); } interval:s:1 { print(@); clear(@); exit(); }").Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
+
+		return out, nil
+
+	default:
+		return nil, fmt.Errorf("unknown metric type: %s", metricType)
 	}
-
-	filteredMetricsStr := strings.Join(filteredMetrics, "\n")
-	filteredMetricsBytes := []byte(filteredMetricsStr)
-
-	if _, err := conn.Write(filteredMetricsBytes); err != nil {
-		return fmt.Errorf("error sending data: %s", err)
-	}
-
-	return nil
 }
