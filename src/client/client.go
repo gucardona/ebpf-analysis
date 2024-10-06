@@ -82,7 +82,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 			}
 		}
 
-		return []byte(strings.Join(filteredOutput, "\n")), nil
+		return []byte(strings.Join(filteredOutput, ",")), nil
 
 	default:
 		return nil, fmt.Errorf("unknown metric type: %s", metricType)
