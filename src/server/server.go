@@ -8,6 +8,7 @@ import (
 
 func StartServer(serverPort int) error {
 	clients := make(map[string]*net.UDPAddr)
+	metricsMap := make(map[string]string) // To store metrics from each client
 
 	addr := net.UDPAddr{
 		Port: serverPort,
@@ -32,13 +33,22 @@ func StartServer(serverPort int) error {
 		metrics := string(buf[:n])
 		clients[remoteAddr.String()] = remoteAddr
 
+		// Store received metrics in metricsMap
+		metricsMap[remoteAddr.String()] = metrics
+
+		// Clear the terminal and print the last update timestamp
 		fmt.Print("\033[H\033[2J")
 		fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))
-		fmt.Println("Metrics:")
-		fmt.Println(metrics)
+		fmt.Println("Metrics from all machines:")
 
+		// Print metrics from all clients
+		for addrStr, metricsData := range metricsMap {
+			fmt.Printf("Metrics from %s: %s\n", addrStr, metricsData)
+		}
+
+		// Broadcast metrics to all clients
 		for addrStr, addrPtr := range clients {
-			if addrStr != remoteAddr.String() {
+			if addrStr != remoteAddr.String() { // Avoid sending metrics back to the sender
 				_, err := conn.WriteToUDP([]byte(metrics), addrPtr)
 				if err != nil {
 					fmt.Println("Error sending data to client:", err)
