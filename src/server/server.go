@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-var clients map[string]net.UDPAddr
-
 func StartServer(serverPort int) error {
+	clients := make(map[string]*net.UDPAddr)
+
 	addr := net.UDPAddr{
 		Port: serverPort,
 		IP:   net.ParseIP("0.0.0.0"),
@@ -30,7 +30,7 @@ func StartServer(serverPort int) error {
 		}
 
 		metrics := string(buf[:n])
-		clients[remoteAddr.String()] = *remoteAddr
+		clients[remoteAddr.String()] = remoteAddr
 
 		fmt.Print("\033[H\033[2J")
 		fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))
@@ -39,7 +39,7 @@ func StartServer(serverPort int) error {
 
 		for addrStr, addrPtr := range clients {
 			if addrStr != remoteAddr.String() {
-				_, err := conn.WriteToUDP([]byte(metrics), &addrPtr)
+				_, err := conn.WriteToUDP([]byte(metrics), addrPtr)
 				if err != nil {
 					fmt.Println("Error sending data to client:", err)
 				}
