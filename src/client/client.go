@@ -10,45 +10,7 @@ import (
 	"time"
 )
 
-const discoveryPort = 9999
-
 func StartClient(serverPort int, messageInterval time.Duration) error {
-	discoveryAddr := net.UDPAddr{
-		Port: discoveryPort,
-		IP:   net.ParseIP("127.0.0.1"),
-	}
-
-	discoveryConn, err := net.DialUDP("udp", nil, &discoveryAddr)
-	if err != nil {
-		return fmt.Errorf("error connecting to discovery server: %s", err)
-	}
-	defer discoveryConn.Close()
-
-	portInfo := fmt.Sprintf("REGISTER: %d", serverPort)
-	_, err = discoveryConn.Write([]byte(portInfo))
-	if err != nil {
-		return fmt.Errorf("error sending registration: %s", err)
-	}
-
-	clients := make(map[string]*net.UDPAddr)
-
-	go func() {
-		buf := make([]byte, 2048)
-		for {
-			n, addr, err := discoveryConn.ReadFromUDP(buf)
-			if err != nil {
-				fmt.Println("Error receiving from discovery server:", err)
-				continue
-			}
-
-			clientInfo := string(buf[:n])
-			if clientInfo != "" && clientInfo != portInfo {
-				clients[addr.String()] = addr
-				fmt.Printf("Discovered client at: %s\n", addr.String())
-			}
-		}
-	}()
-
 	serverAddr := net.UDPAddr{
 		Port: serverPort,
 		IP:   net.ParseIP("127.0.0.1"),
