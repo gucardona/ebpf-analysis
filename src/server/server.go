@@ -18,11 +18,13 @@ func StartServer(serverPort int) error {
 	}
 	defer conn.Close()
 
-	buf := make([]byte, 1024)
-	fmt.Printf("%-20s %-20s\n", "Timestamp", "Metrics")
+	buf := make([]byte, 2048) // Increase buffer size to accommodate larger messages
+
+	fmt.Println("Server is listening on port:", serverPort)
+	fmt.Printf("%-25s %-50s\n", "Timestamp", "Metrics") // Header for the dashboard
 
 	for {
-		n, clientAddr, err := conn.ReadFromUDP(buf)
+		n, _, err := conn.ReadFromUDP(buf)
 		if err != nil {
 			fmt.Println("Error receiving data:", err)
 			continue
@@ -31,7 +33,11 @@ func StartServer(serverPort int) error {
 		timestamp := time.Now().Format(time.RFC3339)
 		metrics := string(buf[:n])
 
-		fmt.Printf("%-20s %-20s\n", timestamp, metrics)
-		fmt.Printf("Received from %s: %s\n", clientAddr, string(buf[:n]))
+		// Print the received metrics in a structured format
+		if metrics == "" {
+			fmt.Printf("%-25s %-50s\n", "Timestamp", "Metrics") // Header for the dashboard
+		} else {
+			fmt.Printf("%-25s %-50s\n", timestamp, metrics)
+		}
 	}
 }

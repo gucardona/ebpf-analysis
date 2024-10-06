@@ -58,6 +58,8 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 	// Start a goroutine to read and send metrics periodically
 	go func() {
 		scanner := bufio.NewScanner(stdout)
+		var accumulatedMetrics strings.Builder
+
 		for {
 			if scanner.Scan() {
 				line := scanner.Text()
@@ -72,25 +74,27 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 				if len(parts) == 2 {
 					metricName := strings.TrimSpace(parts[0])
 					metricCount := strings.TrimSpace(parts[1])
-					message := fmt.Sprintf("%-25s: %s", metricName, metricCount)
+					message := fmt.Sprintf("%-25s: %s\n", metricName, metricCount)
 
-					// Send the collected metric over UDP
-					if _, err := conn.Write([]byte(message + "\n")); err != nil {
-						fmt.Println("Error sending data:", err)
-						return
-					}
+					// Accumulate the metrics
+					accumulatedMetrics.WriteString(message)
+				}
+			}
 
-					// Overwrite the previous output in the terminal
-					fmt.Printf("\rMetrics sent:\n%s", message)
-					// Clear the line
-					fmt.Print("\033[K") // Clear to the end of the line
+			// After collecting metrics for the interval, send the accumulated metrics
+			if accumulatedMetrics.Len() > 0 {
+				// Send the accumulated metrics over UDP
+				if _, err := conn.Write([]byte(accumulatedMetrics.String())); err != nil {
+					fmt.Println("Error sending data:", err)
+					return
 				}
 
-				// Sleep for the message interval
-				time.Sleep(messageInterval)
-			} else {
-				break
+				// Clear the accumulated metrics for the next interval
+				accumulatedMetrics.Reset()
 			}
+
+			// Sleep for the message interval
+			time.Sleep(messageInterval)
 		}
 	}()
 
