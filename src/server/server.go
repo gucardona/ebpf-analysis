@@ -62,14 +62,6 @@ func StartServer(serverPort int) error {
 	}
 }
 
-package main
-
-import (
-"fmt"
-"strconv"
-"strings"
-)
-
 // formatAndPrintMetrics processes metrics data and prints a formatted table of metrics and their counts.
 func formatAndPrintMetrics(metricsData []string) {
 	fmt.Printf("%-30s %s\n", "Metric", "Count")
