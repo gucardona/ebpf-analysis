@@ -11,7 +11,6 @@ import (
 	"time"
 )
 
-// StartClient starts the UDP client to send metrics to the server
 func StartClient(serverPort int, messageInterval time.Duration) error {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Select a metric to send (cpu/mem/gpu):")
@@ -49,7 +48,7 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 					continue
 				}
 
-				time.Sleep(messageInterval) // Wait before collecting next metrics
+				time.Sleep(messageInterval)
 			}
 		}()
 
@@ -57,7 +56,7 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 		log.Fatal("Invalid metric type...")
 	}
 
-	select {} // Block forever to keep the goroutine running
+	select {}
 }
 
 func sendUDP(conn net.Conn, metrics []byte) error {

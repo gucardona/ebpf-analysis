@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/gucardona/ga-redes-udp/src/client"
 	"github.com/gucardona/ga-redes-udp/src/server"
 	"log"
@@ -8,11 +9,14 @@ import (
 )
 
 const (
-	serverPort      = 8443
 	messageInterval = 5 * time.Second
 )
 
 func main() {
+	var serverPort int
+	flag.IntVar(&serverPort, "port", 8443, "UDP server port")
+	flag.Parse()
+
 	go func() {
 		if err := server.StartServer(serverPort); err != nil {
 			log.Fatalf("Failed to start server: %s", err)

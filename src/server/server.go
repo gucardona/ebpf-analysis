@@ -7,14 +7,11 @@ import (
 	"time"
 )
 
-type Server struct {
-	port    int
-	clients map[string]net.UDPAddr
-}
+var clients map[string]net.UDPAddr
 
-func (s *Server) Start() error {
+func StartServer(serverPort int) error {
 	addr := net.UDPAddr{
-		Port: s.port,
+		Port: serverPort,
 		IP:   net.ParseIP("0.0.0.0"),
 	}
 
@@ -34,7 +31,7 @@ func (s *Server) Start() error {
 		}
 
 		metrics := string(buf[:n])
-		s.clients[remoteAddr.String()] = *remoteAddr
+		clients[remoteAddr.String()] = *remoteAddr
 
 		metrics = strings.ReplaceAll(metrics, "Attaching", "")
 
@@ -43,7 +40,7 @@ func (s *Server) Start() error {
 		fmt.Println("Metrics:")
 		fmt.Println(metrics)
 
-		for addrStr, addrPtr := range s.clients {
+		for addrStr, addrPtr := range clients {
 			if addrStr != remoteAddr.String() {
 				_, err := conn.WriteToUDP([]byte(metrics), &addrPtr)
 				if err != nil {
