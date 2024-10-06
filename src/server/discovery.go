@@ -18,6 +18,10 @@ func StartDiscoveryServer() error {
 
 	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
+		if strings.Contains(err.Error(), "bind: address already in use") {
+			return nil
+		}
+
 		return fmt.Errorf("error starting discovery server: %s", err)
 	}
 	defer conn.Close()
