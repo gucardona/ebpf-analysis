@@ -29,7 +29,7 @@ func StartDiscoveryServer() error {
 
 	for {
 		n, remoteAddr, err := conn.ReadFromUDP(buf)
-		fmt.Println(string(buf[:n]))
+		fmt.Println(">>> ", string(buf[:n]))
 		if err != nil {
 			fmt.Println("Error receiving discovery message:", err)
 			continue // Go to the next iteration of the loop
