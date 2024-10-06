@@ -1,19 +1,21 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net"
-	"os"
 	"time"
 )
 
-const discoveryPort = 9999
+const (
+	discoveryErrorMessage = "discovery server is already running on port 9999"
+	discoveryPort         = 9999
+)
 
 func StartServer(serverPort int) error {
-	clients := make(map[string]*net.UDPAddr) // Store discovered clients
-	metricsMap := make(map[string]string)    // Store metrics from each client
+	clients := make(map[string]*net.UDPAddr)
+	metricsMap := make(map[string]string)
 
-	// Setup UDP listener for the main server
 	addr := net.UDPAddr{
 		Port: serverPort,
 		IP:   net.ParseIP("0.0.0.0"),
@@ -25,8 +27,11 @@ func StartServer(serverPort int) error {
 	}
 	defer conn.Close()
 
-	// Start discovery server in a separate goroutine
-	go startDiscoveryServer(clients)
+	if err := startDiscoveryServer(clients); err != nil {
+		if !errors.Is(err, fmt.Errorf(discoveryErrorMessage)) {
+			return fmt.Errorf("error starting discovery server: %s", err)
+		}
+	}
 
 	buf := make([]byte, 2048)
 
@@ -40,22 +45,18 @@ func StartServer(serverPort int) error {
 		metrics := string(buf[:n])
 		clients[remoteAddr.String()] = remoteAddr
 
-		// Store received metrics in metricsMap
 		metricsMap[remoteAddr.String()] = metrics
 
-		// Clear the terminal and print the last update timestamp
 		fmt.Print("\033[H\033[2J")
 		fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))
 		fmt.Println("Metrics from all machines:")
 
-		// Print metrics from all clients
 		for addrStr, metricsData := range metricsMap {
 			fmt.Printf("Metrics from %s: %s\n", addrStr, metricsData)
 		}
 
-		// Broadcast metrics to all clients
 		for addrStr, addrPtr := range clients {
-			if addrStr != remoteAddr.String() { // Avoid sending metrics back to the sender
+			if addrStr != remoteAddr.String() {
 				_, err := conn.WriteToUDP([]byte(metrics), addrPtr)
 				if err != nil {
 					fmt.Println("Error sending data to client:", err)
@@ -65,8 +66,7 @@ func StartServer(serverPort int) error {
 	}
 }
 
-// startDiscoveryServer handles client registration via UDP discovery messages
-func startDiscoveryServer(clients map[string]*net.UDPAddr) {
+func startDiscoveryServer(clients map[string]*net.UDPAddr) error {
 	addr := net.UDPAddr{
 		Port: discoveryPort,
 		IP:   net.ParseIP("0.0.0.0"),
@@ -74,10 +74,15 @@ func startDiscoveryServer(clients map[string]*net.UDPAddr) {
 
 	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
-		fmt.Println("Error starting discovery server:", err)
-		os.Exit(1)
+		var netErr *net.OpError
+		if errors.As(err, &netErr) && netErr.Op == "listen" {
+			return fmt.Errorf(discoveryErrorMessage)
+		}
+		return fmt.Errorf("error starting discovery server: %s", err)
 	}
 	defer conn.Close()
+
+	fmt.Printf("Discovery server is running on port %d\n", discoveryPort)
 
 	for {
 		buf := make([]byte, 2048)
@@ -90,7 +95,6 @@ func startDiscoveryServer(clients map[string]*net.UDPAddr) {
 		clientInfo := string(buf[:n])
 		fmt.Printf("Received registration from: %s, Info: %s\n", remoteAddr.String(), clientInfo)
 
-		// Register the client address
 		clients[remoteAddr.String()] = remoteAddr
 	}
 }
