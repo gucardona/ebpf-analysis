@@ -23,21 +23,24 @@ func StartDiscoveryServer() error {
 	defer conn.Close()
 
 	clients := make(map[string]*net.UDPAddr)
-	fmt.Println("clients: ", clients)
+	fmt.Println("Discovery server started. Listening for messages...")
+
 	buf := make([]byte, 2048)
 
 	for {
 		n, remoteAddr, err := conn.ReadFromUDP(buf)
 		if err != nil {
 			fmt.Println("Error receiving discovery message:", err)
+			continue // Go to the next iteration of the loop
 		}
 
 		message := string(buf[:n])
-		fmt.Println(message)
+		fmt.Println("Received message:", message)
 		if strings.Contains(message, "register") {
 			clients[remoteAddr.String()] = remoteAddr
 			fmt.Printf("New client registered: %s\n", remoteAddr.String())
 
+			// Notify all clients about the new client
 			for _, clientAddr := range clients {
 				_, err := conn.WriteToUDP([]byte(remoteAddr.String()), clientAddr)
 				if err != nil {
