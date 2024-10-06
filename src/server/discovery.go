@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net"
+	"strings"
 )
 
 const (
@@ -31,7 +32,7 @@ func StartDiscoveryServer() error {
 	}
 
 	message := string(buf[:n])
-	if message == "register" {
+	if strings.Contains(message, "register") {
 		clients[remoteAddr.String()] = remoteAddr
 		fmt.Printf("New client registered: %s\n", remoteAddr.String())
 
