@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -62,39 +61,17 @@ func StartServer(serverPort int) error {
 	}
 }
 
-// formatAndPrintMetrics processes metrics data and prints a formatted table of metrics and their counts.
 func formatAndPrintMetrics(metricsData []string) {
 	fmt.Printf("%-30s %s\n", "Metric", "Count")
 	fmt.Println(strings.Repeat("-", 40))
 
-	metricsCount := make(map[string]int)
-
 	for _, metric := range metricsData {
-		// Print each metric being processed for debugging
-		fmt.Printf("Processing metric: %s\n", metric)
+		nameIndex := strings.Index(metric, "@[")
+		quantIndex := strings.Index(metric, "]: ")
 
-		parts := strings.Split(metric, "]:")
-		if len(parts) == 2 {
-			// Convert the count to an integer
-			metricsCount[parts[0]] += atoi(parts[1])
-		} else {
-			// Print a line for metrics that don't match the expected format
-			fmt.Printf("Invalid format for metric: %s\n", metric)
-			fmt.Printf("%-30s %s\n", metric, "N/A")
-		}
-	}
+		name := metric[nameIndex+2 : quantIndex]
+		quant := metric[quantIndex+3:]
 
-	// Print the accumulated counts of each metric
-	for metric, count := range metricsCount {
-		fmt.Printf("%-30s %d\n", metric, count)
+		fmt.Printf("%-30s %s\n", name, quant)
 	}
-}
-
-// atoi converts a string to an integer, returning 0 on failure.
-func atoi(s string) int {
-	if num, err := strconv.Atoi(s); err == nil {
-		return num
-	}
-	fmt.Printf("Error converting to int: %s\n", s) // Debugging
-	return 0
 }
