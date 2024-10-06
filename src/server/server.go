@@ -62,7 +62,7 @@ func StartServer(serverPort int) error {
 }
 
 func formatAndPrintMetrics(metricsData []string) {
-	split := strings.Split(metricsData[0], "\n")
+	split := strings.TrimSuffix(metricsData[0], ",,,,")
 
 	fmt.Println(split)
 
