@@ -7,9 +7,14 @@ import (
 	"time"
 )
 
-func StartServer(serverPort int) error {
+type Server struct {
+	port    int
+	clients map[string]net.UDPAddr
+}
+
+func (s *Server) Start() error {
 	addr := net.UDPAddr{
-		Port: serverPort,
+		Port: s.port,
 		IP:   net.ParseIP("0.0.0.0"),
 	}
 
@@ -19,68 +24,32 @@ func StartServer(serverPort int) error {
 	}
 	defer conn.Close()
 
-	buf := make([]byte, 2048) // Increase buffer size to accommodate larger messages
-
-	metricsMap := make(map[string]map[string]int) // map[MachineID]map[MetricName]Count
+	buf := make([]byte, 2048)
 
 	for {
-		n, _, err := conn.ReadFromUDP(buf)
+		n, remoteAddr, err := conn.ReadFromUDP(buf)
 		if err != nil {
 			fmt.Println("Error receiving data:", err)
 			continue
 		}
 
-		// Parse the incoming metrics (MachineID: metrics)
-		received := string(buf[:n])
-		parts := strings.SplitN(received, ": ", 2)
-		if len(parts) != 2 {
-			continue // Invalid format
-		}
-		machineID := parts[0]
-		metricsData := parts[1]
+		metrics := string(buf[:n])
+		s.clients[remoteAddr.String()] = *remoteAddr
 
-		// Parse metrics data into a structured format
-		metrics := parseMetrics(metricsData)
+		metrics = strings.ReplaceAll(metrics, "Attaching", "")
 
-		// Update the metrics map
-		if _, exists := metricsMap[machineID]; !exists {
-			metricsMap[machineID] = make(map[string]int)
-		}
-		for name, count := range metrics {
-			metricsMap[machineID][name] += count
-		}
-
-		// Clear the previous output using ANSI escape codes
-		fmt.Print("\033[H\033[2J") // Clear terminal
-
-		// Print the last update timestamp and metrics
+		fmt.Print("\033[H\033[2J")
 		fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))
 		fmt.Println("Metrics:")
-		for id, metrics := range metricsMap {
-			fmt.Printf("Machine: %s\n", id)
-			for metric, count := range metrics {
-				fmt.Printf(" - %s : %d\n", metric, count)
+		fmt.Println(metrics)
+
+		for addrStr, addrPtr := range s.clients {
+			if addrStr != remoteAddr.String() {
+				_, err := conn.WriteToUDP([]byte(metrics), &addrPtr)
+				if err != nil {
+					fmt.Println("Error sending data to client:", err)
+				}
 			}
 		}
 	}
-}
-
-// Function to parse metrics data into a map
-func parseMetrics(data string) map[string]int {
-	metrics := make(map[string]int)
-	lines := strings.Split(data, "\n")
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		parts := strings.SplitN(line, ": ", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		metricName := strings.TrimSpace(parts[0])
-		count := 0
-		fmt.Sscanf(parts[1], "%d", &count)
-		metrics[metricName] = count
-	}
-	return metrics
 }
