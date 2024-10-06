@@ -46,7 +46,7 @@ func StartServer(serverPort int) error {
 		}
 
 		fmt.Println("Clients:", Clients)
-		for port := range Clients {
+		for _, port := range Clients {
 			if port != serverPort {
 				fmt.Println(port)
 				_, err := conn.WriteToUDP([]byte(metrics), &net.UDPAddr{
