@@ -82,6 +82,8 @@ func collectMetrics(metricType string) ([]byte, error) {
 			}
 		}
 
+		strings.TrimSpace(filteredOutput[0])
+
 		return []byte(strings.Join(filteredOutput, ",")), nil
 
 	default:
