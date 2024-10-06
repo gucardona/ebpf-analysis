@@ -69,7 +69,7 @@ func formatAndPrintMetrics(metricsData []string) {
 	metricsCount := make(map[string]int)
 
 	for _, metric := range metricsData {
-		parts := strings.Split(metric, ": ")
+		parts := strings.Split(metric, "]:")
 		if len(parts) == 2 {
 			metricsCount[parts[0]] += atoi(parts[1])
 		} else {
