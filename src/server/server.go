@@ -9,7 +9,6 @@ import (
 var Clients []int
 
 func StartServer(serverPort int) error {
-	Clients = append(Clients, serverPort)
 	metricsMap := make(map[string][]string)
 
 	addr := net.UDPAddr{
@@ -41,7 +40,7 @@ func StartServer(serverPort int) error {
 		fmt.Println("Metrics from all machines:")
 
 		for addrStr, metricsData := range metricsMap {
-			fmt.Printf("Metrics from %s:", addrStr)
+			fmt.Printf("Metrics from %s:\n", addrStr)
 			fmt.Println(metricsData)
 		}
 

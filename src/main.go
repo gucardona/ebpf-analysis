@@ -7,7 +7,6 @@ import (
 	"github.com/gucardona/ga-redes-udp/src/server"
 	"log"
 	"net"
-	"sync"
 	"time"
 )
 
@@ -19,9 +18,6 @@ func main() {
 	var serverPort int
 	flag.IntVar(&serverPort, "port", 8443, "UDP server port")
 	flag.Parse()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
 
 	go func() {
 		if err := server.StartDiscoveryServer(); err != nil {
@@ -49,6 +45,6 @@ func waitForServer(port int) {
 			log.Println("Servidor está pronto para aceitar conexões.")
 			break
 		}
-		time.Sleep(1 * time.Second) // Espera um segundo antes de tentar novamente
+		time.Sleep(1 * time.Second)
 	}
 }

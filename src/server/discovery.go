@@ -44,6 +44,7 @@ func StartDiscoveryServer() error {
 		if strings.Contains(message, "register-") {
 			serverPort, _ := strings.CutPrefix(message, "register-")
 			port, _ := strconv.Atoi(serverPort)
+
 			Clients = append(Clients, port)
 			fmt.Printf("New client registered: %s\n", remoteAddr.String())
 
