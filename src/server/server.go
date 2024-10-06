@@ -46,11 +46,11 @@ func StartServer(serverPort int) error {
 		}
 
 		fmt.Println("Clients:", Clients)
+		if !arrayContains(Clients, serverPort) {
+			Clients = append(Clients, serverPort)
+		}
+
 		for i := 0; i < len(Clients); i++ {
-			if !arrayContains(Clients, serverPort) {
-				Clients = append(Clients, serverPort)
-			}
-			
 			if Clients[i] != serverPort {
 				fmt.Println(Clients[i])
 				_, err := conn.WriteToUDP([]byte(metrics), &net.UDPAddr{
