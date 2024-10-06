@@ -6,11 +6,6 @@ import (
 	"time"
 )
 
-const (
-	discoveryErrorMessage = "discovery server is already running on port 9999"
-	discoveryPort         = 9999
-)
-
 func StartServer(serverPort int) error {
 	clients := make(map[string]*net.UDPAddr)
 	metricsMap := make(map[string]string)

@@ -23,6 +23,10 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
+	if err := server.StartDiscoveryServer(); err != nil {
+		log.Fatalf("Failed to start discovery server: %s", err)
+	}
+
 	go func() {
 		if err := server.StartServer(serverPort); err != nil {
 			log.Fatalf("Failed to start server: %s", err)
