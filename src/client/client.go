@@ -3,7 +3,6 @@ package client
 import (
 	"bufio"
 	"fmt"
-	"github.com/gucardona/ga-redes-udp/src/server"
 	"net"
 	"os"
 	"os/exec"
@@ -12,22 +11,6 @@ import (
 )
 
 func StartClient(serverPort int, messageInterval time.Duration) error {
-	discoveryAddr := net.UDPAddr{
-		Port: server.DiscoveryPort,
-		IP:   net.ParseIP("127.0.0.1"),
-	}
-
-	connDiscovery, err := net.DialUDP("udp", nil, &discoveryAddr)
-	if err != nil {
-		return fmt.Errorf("error connecting to discovery server: %s", err)
-	}
-	defer connDiscovery.Close()
-
-	_, err = connDiscovery.Write([]byte(fmt.Sprintf("register-%d", serverPort)))
-	if err != nil {
-		return fmt.Errorf("error sending register message: %s", err)
-	}
-
 	serverAddr := net.UDPAddr{
 		Port: serverPort,
 		IP:   net.ParseIP("127.0.0.1"),

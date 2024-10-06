@@ -35,20 +35,39 @@ func StartServer(serverPort int) error {
 		metrics := string(buf[:n])
 		if strings.Contains(metrics, "@") {
 			metricsMap[remoteAddr.String()] = metrics
+			fmt.Println(strings.Repeat("=", 40))
+			fmt.Println()
 
 			fmt.Print("\033[H\033[2J")
-			fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))
-			fmt.Println("Metrics from all machines:")
+			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
-			for addrStr, metricsData := range metricsMap {
-				fmt.Printf("Metrics from %s:\n", addrStr)
+			for _, metricsData := range metricsMap {
 				formatAndPrintMetrics(metricsData)
 			}
+
+			fmt.Println()
+			fmt.Println(strings.Repeat("=", 40))
 		}
 
 		fmt.Println("Clients:", Clients)
-		if !arrayContains(Clients, serverPort) {
+		if !ArrayContains(Clients, serverPort) {
 			Clients = append(Clients, serverPort)
+		}
+
+		discoveryAddr := net.UDPAddr{
+			Port: DiscoveryPort,
+			IP:   net.ParseIP("127.0.0.1"),
+		}
+
+		connDiscovery, err := net.DialUDP("udp", nil, &discoveryAddr)
+		if err != nil {
+			return fmt.Errorf("error connecting to discovery server: %s", err)
+		}
+		defer connDiscovery.Close()
+
+		_, err = connDiscovery.Write([]byte(fmt.Sprintf("register-%d", serverPort)))
+		if err != nil {
+			return fmt.Errorf("error sending register message: %s", err)
 		}
 
 		for i := 0; i < len(Clients); i++ {
@@ -93,7 +112,7 @@ func formatAndPrintMetrics(metricsData string) {
 	}
 }
 
-func arrayContains(slice []int, item int) bool {
+func ArrayContains(slice []int, item int) bool {
 	for _, element := range slice {
 		if element == item {
 			return true

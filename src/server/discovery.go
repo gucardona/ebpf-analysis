@@ -45,8 +45,10 @@ func StartDiscoveryServer() error {
 			serverPort, _ := strings.CutPrefix(message, "register-")
 			port, _ := strconv.Atoi(serverPort)
 
-			Clients = append(Clients, port)
-			fmt.Printf("New client registered: %s\n", remoteAddr.String())
+			if !ArrayContains(Clients, port) {
+				Clients = append(Clients, port)
+				fmt.Printf("New client registered: %s\n", remoteAddr.String())
+			}
 
 			for _, port := range Clients {
 				_, err := conn.WriteToUDP([]byte(remoteAddr.String()), &net.UDPAddr{
