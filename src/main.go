@@ -2,9 +2,15 @@ package main
 
 import (
 	"flag"
+	"github.com/gucardona/ga-redes-udp/src/client"
 	"github.com/gucardona/ga-redes-udp/src/server"
 	"log"
 	"sync"
+	"time"
+)
+
+const (
+	messageInterval = 5 * time.Second
 )
 
 func main() {
@@ -16,8 +22,15 @@ func main() {
 	wg.Add(1)
 
 	go func() {
+		defer wg.Done()
 		if err := server.StartServer(serverPort); err != nil {
 			log.Fatalf("Failed to start server: %s", err)
 		}
 	}()
+
+	wg.Wait()
+
+	if err := client.StartClient(serverPort, messageInterval); err != nil {
+		log.Fatalf("Failed to start client: %s", err)
+	}
 }
