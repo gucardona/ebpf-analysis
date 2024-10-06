@@ -10,32 +10,45 @@ import (
 	"time"
 )
 
-const (
-	discoveryPort = 9999
-)
+const discoveryPort = 9999
 
-// StartClient initializes the client, registers it with the server, and starts sending metrics.
 func StartClient(serverPort int, messageInterval time.Duration) error {
 	discoveryAddr := net.UDPAddr{
 		Port: discoveryPort,
 		IP:   net.ParseIP("127.0.0.1"),
 	}
 
-	// Connect to the discovery server
 	discoveryConn, err := net.DialUDP("udp", nil, &discoveryAddr)
 	if err != nil {
 		return fmt.Errorf("error connecting to discovery server: %s", err)
 	}
 	defer discoveryConn.Close()
 
-	// Register with the discovery server
 	portInfo := fmt.Sprintf("REGISTER: %d", serverPort)
 	_, err = discoveryConn.Write([]byte(portInfo))
 	if err != nil {
 		return fmt.Errorf("error sending registration: %s", err)
 	}
 
-	// Connect to the main server
+	clients := make(map[string]*net.UDPAddr)
+
+	go func() {
+		buf := make([]byte, 2048)
+		for {
+			n, addr, err := discoveryConn.ReadFromUDP(buf)
+			if err != nil {
+				fmt.Println("Error receiving from discovery server:", err)
+				continue
+			}
+
+			clientInfo := string(buf[:n])
+			if clientInfo != "" && clientInfo != portInfo {
+				clients[addr.String()] = addr
+				fmt.Printf("Discovered client at: %s\n", addr.String())
+			}
+		}
+	}()
+
 	serverAddr := net.UDPAddr{
 		Port: serverPort,
 		IP:   net.ParseIP("127.0.0.1"),
@@ -47,11 +60,9 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 	}
 	defer conn.Close()
 
-	// Listen for responses from the discovery server
-	go listenForDiscoveryResponses(discoveryConn)
-
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Select a metric to send (cpu/mem/gpu):")
+	fmt.Println(" - cpu: The command is continuously counting how many times different processes are scheduled by the Linux kernel.")
 	metricType, _ := reader.ReadString('\n')
 	metricType = strings.TrimSpace(metricType)
 
@@ -59,7 +70,6 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 		metrics, err := collectMetrics(metricType)
 		if err != nil {
 			fmt.Println("Error collecting metrics:", err)
-			continue
 		}
 
 		_, err = conn.Write(metrics)
@@ -71,21 +81,6 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 	}
 }
 
-// listenForDiscoveryResponses listens for any messages from the discovery server.
-func listenForDiscoveryResponses(conn *net.UDPConn) {
-	buf := make([]byte, 2048)
-	for {
-		n, _, err := conn.ReadFromUDP(buf)
-		if err != nil {
-			fmt.Println("Error receiving from discovery server:", err)
-			return // Exit on error
-		}
-		clientInfo := string(buf[:n])
-		fmt.Printf("Received from discovery server: %s\n", clientInfo)
-	}
-}
-
-// collectMetrics gathers metrics based on the specified type.
 func collectMetrics(metricType string) ([]byte, error) {
 	switch metricType {
 	case "cpu":
@@ -97,6 +92,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
+
 		return out, nil
 
 	default:
