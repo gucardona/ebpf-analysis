@@ -62,7 +62,9 @@ func StartServer(serverPort int) error {
 }
 
 func formatAndPrintMetrics(metricsData []string) {
-	fmt.Println(metricsData[0])
+	split := strings.Split(metricsData[0], "@[")
+
+	fmt.Println(split)
 
 	fmt.Printf("%-30s %s\n", "Metric", "Count")
 	fmt.Println(strings.Repeat("-", 40))
