@@ -54,22 +54,6 @@ func StartServer(serverPort int) error {
 			Clients = append(Clients, serverPort)
 		}
 
-		discoveryAddr := net.UDPAddr{
-			Port: DiscoveryPort,
-			IP:   net.ParseIP("127.0.0.1"),
-		}
-
-		connDiscovery, err := net.DialUDP("udp", nil, &discoveryAddr)
-		if err != nil {
-			return fmt.Errorf("error connecting to discovery server: %s", err)
-		}
-		defer connDiscovery.Close()
-
-		_, err = connDiscovery.Write([]byte(fmt.Sprintf("register-%d", serverPort)))
-		if err != nil {
-			return fmt.Errorf("error sending register message: %s", err)
-		}
-
 		for i := 0; i < len(Clients); i++ {
 			if Clients[i] != serverPort {
 				fmt.Println(Clients[i])

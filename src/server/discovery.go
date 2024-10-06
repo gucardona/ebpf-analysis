@@ -42,21 +42,39 @@ func StartDiscoveryServer() error {
 		message := string(buf[:n])
 		fmt.Println("Received message:", message)
 		if strings.Contains(message, "register-") {
-			serverPort, _ := strings.CutPrefix(message, "register-")
-			port, _ := strconv.Atoi(serverPort)
+			serverPort, ok := strings.CutPrefix(message, "register-")
+			if !ok {
+				fmt.Println("Prefix not found to cut: ", err)
+				continue
+			}
+
+			port, err := strconv.Atoi(serverPort)
+			if err != nil {
+				fmt.Println("Error converting port: ", err)
+				continue
+			}
 
 			if !ArrayContains(Clients, port) {
 				Clients = append(Clients, port)
 				fmt.Printf("New client registered: %s\n", remoteAddr.String())
 			}
 
-			for _, port := range Clients {
-				_, err := conn.WriteToUDP([]byte(remoteAddr.String()), &net.UDPAddr{
-					Port: port,
-					IP:   net.ParseIP("127.0.0.1"),
-				})
+			for _, clientPort := range Clients {
+				if clientPort != port {
+					_, err := conn.WriteToUDP([]byte(fmt.Sprintf("new-client-%d", port)), &net.UDPAddr{
+						Port: clientPort,
+						IP:   remoteAddr.IP,
+					})
+					if err != nil {
+						fmt.Println("Error sending discovery message to client:", err)
+					}
+				}
+			}
+
+			for _, clientPort := range Clients {
+				_, err := conn.WriteToUDP([]byte(fmt.Sprintf("client-list-%d", clientPort)), remoteAddr)
 				if err != nil {
-					fmt.Println("Error sending discovery message to client:", err)
+					fmt.Println("Error sending discovery message to the new client:", err)
 				}
 			}
 		}
