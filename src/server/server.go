@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -20,8 +21,6 @@ func StartServer(serverPort int) error {
 
 	buf := make([]byte, 2048) // Increase buffer size to accommodate larger messages
 
-	var metricsList []string // Store received metrics
-
 	for {
 		n, _, err := conn.ReadFromUDP(buf)
 		if err != nil {
@@ -32,15 +31,23 @@ func StartServer(serverPort int) error {
 		timestamp := time.Now().Format(time.RFC3339)
 		metrics := string(buf[:n])
 
-		// Append received metrics to the list
-		metricsList = append(metricsList, metrics)
+		// Remove the "Attaching" line if it exists
+		if strings.Contains(metrics, "Attaching") {
+			lines := strings.Split(metrics, "\n")
+			var filteredMetrics []string
+			for _, line := range lines {
+				if !strings.Contains(line, "Attaching") {
+					filteredMetrics = append(filteredMetrics, line)
+				}
+			}
+			metrics = strings.Join(filteredMetrics, "\n")
+		}
 
 		// Clear the previous output using ANSI escape codes
 		fmt.Print("\033[H\033[2J") // Clear terminal
 
 		// Print the last update timestamp and metrics
 		fmt.Printf("Last update: %s\n", timestamp)
-		fmt.Println("Metrics:")
 		fmt.Println(metrics)
 	}
 }
