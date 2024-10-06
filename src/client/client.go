@@ -60,7 +60,20 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 }
 
 func sendUDP(conn net.Conn, metrics []byte) error {
-	if _, err := conn.Write(metrics); err != nil {
+	metricsStr := string(metrics)
+
+	lines := strings.Split(metricsStr, "\n")
+	var filteredMetrics []string
+	for _, line := range lines {
+		if !strings.Contains(line, "Attaching") {
+			filteredMetrics = append(filteredMetrics, line)
+		}
+	}
+
+	filteredMetricsStr := strings.Join(filteredMetrics, "\n")
+	filteredMetricsBytes := []byte(filteredMetricsStr)
+
+	if _, err := conn.Write(filteredMetricsBytes); err != nil {
 		return fmt.Errorf("error sending data: %s", err)
 	}
 

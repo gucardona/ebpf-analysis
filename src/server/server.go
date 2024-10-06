@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -32,8 +31,6 @@ func StartServer(serverPort int) error {
 
 		metrics := string(buf[:n])
 		clients[remoteAddr.String()] = *remoteAddr
-
-		metrics = strings.ReplaceAll(metrics, "Attaching", "")
 
 		fmt.Print("\033[H\033[2J")
 		fmt.Printf("Last update: %s\n", time.Now().Format(time.RFC3339))

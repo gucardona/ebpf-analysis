@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/gucardona/ga-redes-udp/src/client"
 	"github.com/gucardona/ga-redes-udp/src/server"
 	"log"
@@ -15,7 +16,9 @@ const (
 func main() {
 	var serverPort int
 	flag.IntVar(&serverPort, "port", 8443, "UDP server port")
+	fmt.Println(serverPort)
 	flag.Parse()
+	fmt.Println(serverPort)
 
 	go func() {
 		if err := server.StartServer(serverPort); err != nil {
