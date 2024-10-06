@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -41,7 +42,7 @@ func StartServer(serverPort int) error {
 
 		for addrStr, metricsData := range metricsMap {
 			fmt.Printf("Metrics from %s:\n", addrStr)
-			fmt.Println(metricsData)
+			formatAndPrintMetrics(metricsData)
 		}
 
 		fmt.Println("Clients:", Clients)
@@ -56,6 +57,20 @@ func StartServer(serverPort int) error {
 					fmt.Printf("Error sending data to client %d: %s", Clients[i], err)
 				}
 			}
+		}
+	}
+}
+
+func formatAndPrintMetrics(metricsData []string) {
+	fmt.Printf("%-30s %s\n", "Metric", "Count")
+	fmt.Println(strings.Repeat("-", 40))
+
+	for _, metric := range metricsData {
+		parts := strings.Split(metric, ": ")
+		if len(parts) == 2 {
+			fmt.Printf("%-30s %s\n", parts[0], parts[1])
+		} else {
+			fmt.Printf("%-30s %s\n", metric, "N/A")
 		}
 	}
 }
