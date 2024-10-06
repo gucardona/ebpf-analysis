@@ -9,6 +9,7 @@ import (
 var Clients []int
 
 func StartServer(serverPort int) error {
+	Clients = append(Clients, serverPort)
 	metricsMap := make(map[string][]string)
 
 	addr := net.UDPAddr{
@@ -47,6 +48,7 @@ func StartServer(serverPort int) error {
 		fmt.Println("Clients:", Clients)
 		for port := range Clients {
 			if port != serverPort {
+				fmt.Println(port)
 				_, err := conn.WriteToUDP([]byte(metrics), &net.UDPAddr{
 					Port: port,
 					IP:   net.ParseIP("127.0.0.1"),
