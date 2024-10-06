@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -65,12 +66,25 @@ func formatAndPrintMetrics(metricsData []string) {
 	fmt.Printf("%-30s %s\n", "Metric", "Count")
 	fmt.Println(strings.Repeat("-", 40))
 
+	metricsCount := make(map[string]int)
+
 	for _, metric := range metricsData {
 		parts := strings.Split(metric, ": ")
 		if len(parts) == 2 {
-			fmt.Printf("%-30s %s\n", parts[0], parts[1])
+			metricsCount[parts[0]] += atoi(parts[1])
 		} else {
 			fmt.Printf("%-30s %s\n", metric, "N/A")
 		}
 	}
+
+	for metric, count := range metricsCount {
+		fmt.Printf("%-30s %d\n", metric, count)
+	}
+}
+
+func atoi(s string) int {
+	if num, err := strconv.Atoi(s); err == nil {
+		return num
+	}
+	return 0
 }
