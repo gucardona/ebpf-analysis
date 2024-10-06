@@ -67,12 +67,22 @@ func collectMetrics(metricType string) ([]byte, error) {
 			"sudo",
 			"bpftrace",
 			"-e",
-			"profile:hz:99 { @[$comm] = count(); }").Output()
+			"kprobe:schedule { @[comm] = count(); } interval:s:1 { print(@); clear(@); exit(); }").Output()
 		if err != nil {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
 
-		return out, nil
+		output := string(out)
+		lines := strings.Split(output, "\n")
+
+		var filteredOutput []string
+		for _, line := range lines {
+			if !strings.Contains(line, "probes...") {
+				filteredOutput = append(filteredOutput, line)
+			}
+		}
+
+		return []byte(strings.Join(filteredOutput, "\n")), nil
 
 	default:
 		return nil, fmt.Errorf("unknown metric type: %s", metricType)
