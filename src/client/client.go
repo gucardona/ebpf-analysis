@@ -27,7 +27,7 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 			"sudo",
 			"bpftrace",
 			"-e",
-			"kprobe:schedule { @[comm] = count(); } interval:s:1 { print(@); clear(@); exit(); }")
+			"kprobe:schedule { @[comm] = count(); } interval:s:1 { print(@); clear(@); }")
 
 	default:
 		log.Fatal("Invalid metric type...")
@@ -55,22 +55,46 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 	}
 	defer conn.Close()
 
-	// Read all lines from bpftrace output
-	scanner := bufio.NewScanner(stdout)
-	var allMetrics strings.Builder
-	for scanner.Scan() {
-		line := scanner.Text()
-		allMetrics.WriteString(line + "\n")
-	}
+	// Start a goroutine to read and send metrics periodically
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for {
+			if scanner.Scan() {
+				line := scanner.Text()
+				// Filter out "Attaching probes..." and empty lines
+				if strings.Contains(line, "Attaching probes") || strings.TrimSpace(line) == "" {
+					continue
+				}
 
-	// Send the accumulated metrics over UDP
-	message := allMetrics.String()
-	if _, err = conn.Write([]byte(message)); err != nil {
-		fmt.Println("Error sending data:", err)
-		return err
-	}
-	fmt.Println("Metrics sent:\n", message)
+				// Format the line to be aligned
+				// Assuming the format is @[name]: count
+				parts := strings.Split(line, ":")
+				if len(parts) == 2 {
+					metricName := strings.TrimSpace(parts[0])
+					metricCount := strings.TrimSpace(parts[1])
+					message := fmt.Sprintf("%-25s: %s", metricName, metricCount)
 
+					// Send the collected metric over UDP
+					if _, err := conn.Write([]byte(message + "\n")); err != nil {
+						fmt.Println("Error sending data:", err)
+						return
+					}
+
+					// Overwrite the previous output in the terminal
+					fmt.Printf("\rMetrics sent:\n%s", message)
+					// Clear the line
+					fmt.Print("\033[K") // Clear to the end of the line
+				}
+
+				// Sleep for the message interval
+				time.Sleep(messageInterval)
+			} else {
+				break
+			}
+		}
+	}()
+
+	// Wait for the BPFtrace command to complete
 	if err := cmd.Wait(); err != nil {
 		return fmt.Errorf("failed to wait for command completion: %s", err)
 	}
