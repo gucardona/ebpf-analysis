@@ -68,7 +68,7 @@ func StartServer(serverPort int) error {
 			fmt.Print("\033[H\033[2J")
 			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
-			formatAndPrintMetrics(message)
+			displayAllMetrics()
 
 			fmt.Println()
 			fmt.Println(strings.Repeat("=", 40))
@@ -98,10 +98,16 @@ func ArrayContains(slice []int, item int) bool {
 	return false
 }
 
-func formatAndPrintMetrics(metricsData string) {
-	fmt.Printf("%-30s %s\n", "Metric", "Count")
-	fmt.Println(strings.Repeat("-", 40))
+func displayAllMetrics() {
+	fmt.Printf("%-30s %s\n", "Client", "Metric Data")
+	fmt.Println(strings.Repeat("-", 50))
 
+	for clientKey, message := range clientMessages {
+		fmt.Printf("%-30s %s\n", clientKey, formatMetricsForClient(message))
+	}
+}
+
+func formatMetricsForClient(metricsData string) string {
 	trim := strings.TrimSpace(metricsData)
 
 	lines := strings.Split(trim, "\n")
@@ -110,6 +116,7 @@ func formatAndPrintMetrics(metricsData string) {
 		lines = lines[1:]
 	}
 
+	var formattedMetrics strings.Builder
 	for _, line := range lines {
 		nameIndex := strings.Index(line, "@[")
 		quantIndex := strings.Index(line, "]: ")
@@ -117,10 +124,8 @@ func formatAndPrintMetrics(metricsData string) {
 		if nameIndex != -1 && quantIndex != -1 {
 			name := line[nameIndex+2 : quantIndex]
 			quant := line[quantIndex+3:]
-
-			fmt.Printf("%-30s %s\n", name, quant)
-		} else {
-			fmt.Printf("Invalid line format: %s\n", line)
+			formattedMetrics.WriteString(fmt.Sprintf("%s: %s, ", name, quant))
 		}
 	}
+	return strings.TrimSuffix(formattedMetrics.String(), ", ")
 }
