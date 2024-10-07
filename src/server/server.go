@@ -12,8 +12,6 @@ import (
 var (
 	serverRegisteredClients []int
 	clientMessages          = make(map[string]string)
-	currentType             string
-	currentTypeMessage      string
 )
 
 func StartServer(serverPort int) error {
@@ -108,16 +106,20 @@ func displayAllMetrics() {
 	fmt.Println(strings.Repeat("-", 150))
 
 	for clientKey, message := range clientMessages {
+		currentTypeMessage, formattedMessage := formatMetricsForClient(message)
+
 		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
-			fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formatMetricsForClient(message))
+			fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formattedMessage)
 		} else {
-			fmt.Printf("%-30s %s: %s\n", clientKey, currentTypeMessage, formatMetricsForClient(message))
+			fmt.Printf("%-30s %s: %s\n", clientKey, currentTypeMessage, formattedMessage)
 		}
 		fmt.Println()
 	}
 }
 
-func formatMetricsForClient(metricsData string) string {
+func formatMetricsForClient(metricsData string) (string, string) {
+	var currentTypeMessage string
+
 	trim := strings.TrimSpace(metricsData)
 
 	lines := strings.Split(trim, "\n")
@@ -129,7 +131,7 @@ func formatMetricsForClient(metricsData string) string {
 	var formattedMetrics strings.Builder
 	for _, line := range lines {
 		if strings.HasPrefix(line, ":T:") {
-			currentType = strings.TrimSpace(line)
+			currentType := strings.TrimSpace(line)
 			currentType = strings.Replace(currentType, ":T:", "", 1)
 			switch currentType {
 			case "SCHEDULE_METRIC":
@@ -162,5 +164,5 @@ func formatMetricsForClient(metricsData string) string {
 			formattedMetrics.WriteString(fmt.Sprintf("%s: %s, ", name, quant))
 		}
 	}
-	return strings.TrimSuffix(formattedMetrics.String(), ", ")
+	return currentTypeMessage, strings.TrimSuffix(formattedMetrics.String(), ", ")
 }
