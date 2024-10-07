@@ -99,6 +99,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 		return appendedResult, nil
 
 	case "packet":
+		fmt.Println(metricType)
 		out, err := exec.Command(
 			"sudo",
 			"bpftrace",
