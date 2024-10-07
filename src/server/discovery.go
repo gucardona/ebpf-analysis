@@ -39,8 +39,9 @@ func StartDiscoveryServer() error {
 		}
 
 		message := string(buf[:n])
+		fmt.Println("[Discovery] Received message: ", message)
+
 		if strings.Contains(message, "register-") {
-			fmt.Println("Received message: ", message)
 			serverPort, ok := strings.CutPrefix(message, "register-")
 			if !ok {
 				fmt.Println("Prefix not found to cut: ", err)

@@ -54,9 +54,10 @@ func StartServer(serverPort int) error {
 				fmt.Print("\033[H\033[2J")
 				fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
-				for _, metricsData := range metricsMap {
-					formatAndPrintMetrics(metricsData)
-				}
+				fmt.Println(metricsMap)
+				//for _, metricsData := range metricsMap {
+				//	formatAndPrintMetrics(metricsData)
+				//}
 
 				fmt.Println()
 				fmt.Println(strings.Repeat("=", 40))
