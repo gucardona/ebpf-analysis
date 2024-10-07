@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -60,8 +61,49 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 	fmt.Println(" - rtime: This metric provides insights into how much runtime each process is utilizing, in ns.")
 	fmt.Println(" - read: This metric tracks the number of times the read system call is invoked by different processes running on the system.")
 	fmt.Println(" - write: This metric tracks the number of times the write system call is invoked by different processes running on the system.")
-	metricType, _ := reader.ReadString('\n')
-	metricType = strings.TrimSpace(metricType)
+	//metricType, _ := reader.ReadString('\n')
+	//metricType = strings.TrimSpace(metricType)
+
+	var metricType string
+	var mu sync.Mutex
+	var validMetricSelected bool
+
+	go func() {
+		for {
+			metricTypeInput, _ := reader.ReadString('\n')
+			metricTypeInput = strings.TrimSpace(metricTypeInput)
+
+			validMetrics := map[string]struct{}{
+				"schp":   {},
+				"packet": {},
+				"data":   {},
+				"rtime":  {},
+				"read":   {},
+				"write":  {},
+			}
+
+			mu.Lock()
+			if _, isValid := validMetrics[metricTypeInput]; isValid {
+				metricType = metricTypeInput
+				validMetricSelected = true
+				mu.Unlock()
+				return
+			}
+			mu.Unlock()
+
+			fmt.Println("Invalid metric selected. Please select a valid metric.")
+		}
+	}()
+
+	for {
+		mu.Lock()
+		if validMetricSelected {
+			mu.Unlock()
+			break
+		}
+		mu.Unlock()
+		time.Sleep(time.Millisecond * 100)
+	}
 
 	for {
 		metrics, err := collectMetrics(metricType)
