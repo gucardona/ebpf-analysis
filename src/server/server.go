@@ -88,8 +88,6 @@ func StartServer(serverPort int) error {
 					}
 				}
 			}
-			
-			delete(clientMessages, clientKey)
 		}
 	}
 }
@@ -104,6 +102,8 @@ func ArrayContains(slice []int, item int) bool {
 }
 
 func displayAllMetrics() {
+	fmt.Println(serverRegisteredClients)
+	fmt.Println(clientMessages)
 	fmt.Printf("%-30s %s\n", "Metric Type", "Metric Data")
 	fmt.Println(strings.Repeat("-", 150))
 
