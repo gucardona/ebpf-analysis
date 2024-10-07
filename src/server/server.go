@@ -108,6 +108,7 @@ func displayAllMetrics() {
 		} else {
 			fmt.Printf("%-30s %s\n", clientKey, formatMetricsForClient(message))
 		}
+		fmt.Println()
 	}
 }
 
