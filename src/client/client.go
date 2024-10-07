@@ -3,7 +3,7 @@ package client
 import (
 	"bufio"
 	"fmt"
-	"github.com/gucardona/ga-redes-udp/src/server/discovery"
+	"github.com/gucardona/ga-redes-udp/src/discovery"
 	"net"
 	"os"
 	"os/exec"
