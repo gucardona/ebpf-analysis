@@ -68,7 +68,7 @@ func StartServer(serverPort int) error {
 			fmt.Print("\033[H\033[2J")
 			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
-			fmt.Println(clientMessages)
+			formatAndPrintMetrics(message)
 
 			fmt.Println()
 			fmt.Println(strings.Repeat("=", 40))
@@ -96,4 +96,31 @@ func ArrayContains(slice []int, item int) bool {
 		}
 	}
 	return false
+}
+
+func formatAndPrintMetrics(metricsData string) {
+	fmt.Printf("%-30s %s\n", "Metric", "Count")
+	fmt.Println(strings.Repeat("-", 40))
+
+	trim := strings.TrimSpace(metricsData)
+
+	lines := strings.Split(trim, "\n")
+
+	if len(lines) > 1 {
+		lines = lines[1:]
+	}
+
+	for _, line := range lines {
+		nameIndex := strings.Index(line, "@[")
+		quantIndex := strings.Index(line, "]: ")
+
+		if nameIndex != -1 && quantIndex != -1 {
+			name := line[nameIndex+2 : quantIndex]
+			quant := line[quantIndex+3:]
+
+			fmt.Printf("%-30s %s\n", name, quant)
+		} else {
+			fmt.Printf("Invalid line format: %s\n", line)
+		}
+	}
 }
