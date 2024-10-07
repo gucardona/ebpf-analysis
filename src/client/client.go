@@ -79,6 +79,8 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 }
 
 func collectMetrics(metricType string) ([]byte, error) {
+	fmt.Println(metricType)
+
 	switch metricType {
 	case "schp":
 		out, err := exec.Command(
@@ -102,6 +104,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 			"bpftrace",
 			"-e",
 			"tracepoint:net:netif_receive_skb { @[comm] = count(); } interval:s:1 { print(@); clear(@); }").Output()
+		fmt.Println(out)
 		if err != nil {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
