@@ -120,6 +120,8 @@ func formatMetricsForClient(metricsData string) string {
 
 	lines := strings.Split(trim, "\n")
 
+	fmt.Println(lines)
+
 	if len(lines) > 1 {
 		lines = lines[1:]
 	}
