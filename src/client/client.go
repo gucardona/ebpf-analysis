@@ -101,12 +101,12 @@ func collectMetrics(metricType string) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
-		
+
 		metricTypeStr := ":PACKET_METRIC"
 		metricTypeBytes := []byte(metricTypeStr)
 
 		appendedResult := append(out, metricTypeBytes...)
-
+		fmt.Println(appendedResult)
 		return appendedResult, nil
 
 	default:
