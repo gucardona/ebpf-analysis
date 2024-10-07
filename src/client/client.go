@@ -3,7 +3,6 @@ package client
 import (
 	"bufio"
 	"fmt"
-	"github.com/gucardona/ga-redes-udp/src/discovery"
 	"net"
 	"os"
 	"os/exec"
@@ -15,7 +14,7 @@ var ClientAddr *net.UDPAddr
 
 func StartClient(serverPort int, clientPort int, messageInterval time.Duration) error {
 	discoveryAddr := net.UDPAddr{
-		Port: discovery.DiscoveryPort,
+		Port: 9999,
 		IP:   net.ParseIP("127.0.0.1"),
 	}
 
