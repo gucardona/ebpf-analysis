@@ -12,10 +12,6 @@ import (
 	"time"
 )
 
-const (
-	HeartbeatInterval = 10 * time.Second
-)
-
 func StartClient(serverPort int, messageInterval time.Duration) error {
 	discoveryAddr := net.UDPAddr{
 		Port: server.DiscoveryPort,
@@ -28,38 +24,18 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 	}
 	defer connDiscovery.Close()
 
-	registerMessage := struct {
-		Type string `json:"type"`
-		Port int    `json:"port"`
-	}{
-		Type: "register",
-		Port: serverPort,
-	}
+	registerMessage := []byte(fmt.Sprintf("register-%d", serverPort))
 
-	data, err := json.Marshal(registerMessage)
-	if err != nil {
-		return fmt.Errorf("error marshaling register message: %s", err)
-	}
-
-	_, err = connDiscovery.Write(data)
+	_, err = connDiscovery.Write(registerMessage)
 	if err != nil {
 		return fmt.Errorf("error sending register message: %s", err)
 	}
 
-	// Start heartbeat goroutine
 	go func() {
-		heartbeatMessage := struct {
-			Type string `json:"type"`
-			Port int    `json:"port"`
-		}{
-			Type: "heartbeat",
-			Port: serverPort,
-		}
-
 		for {
-			data, _ := json.Marshal(heartbeatMessage)
+			data, _ := json.Marshal(registerMessage)
 			connDiscovery.Write(data)
-			time.Sleep(HeartbeatInterval)
+			time.Sleep(1)
 		}
 	}()
 

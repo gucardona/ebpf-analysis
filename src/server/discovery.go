@@ -11,7 +11,7 @@ const (
 	DiscoveryPort = 9999
 )
 
-var Clients []int
+var discoveryClients []int
 
 func StartDiscoveryServer() error {
 	addr := net.UDPAddr{
@@ -29,8 +29,6 @@ func StartDiscoveryServer() error {
 	}
 	defer conn.Close()
 
-	fmt.Println("Discovery server started. Listening for messages...")
-
 	buf := make([]byte, 2048)
 
 	for {
@@ -41,7 +39,7 @@ func StartDiscoveryServer() error {
 		}
 
 		message := string(buf[:n])
-		fmt.Println("Received message:", message)
+		fmt.Println("Received message: ", message)
 		if strings.Contains(message, "register-") {
 			serverPort, ok := strings.CutPrefix(message, "register-")
 			if !ok {
@@ -55,12 +53,12 @@ func StartDiscoveryServer() error {
 				continue
 			}
 
-			if !ArrayContains(Clients, port) {
-				Clients = append(Clients, port)
+			if !ArrayContains(discoveryClients, port) {
+				discoveryClients = append(discoveryClients, port)
 				fmt.Printf("New client registered: %s\n", remoteAddr.String())
 			}
 
-			for _, clientPort := range Clients {
+			for _, clientPort := range discoveryClients {
 				if clientPort != port {
 					_, err := conn.WriteToUDP([]byte(fmt.Sprintf("new-client-%d", port)), &net.UDPAddr{
 						Port: clientPort,
@@ -69,13 +67,6 @@ func StartDiscoveryServer() error {
 					if err != nil {
 						fmt.Println("Error sending discovery message to client:", err)
 					}
-				}
-			}
-
-			for _, clientPort := range Clients {
-				_, err := conn.WriteToUDP([]byte(fmt.Sprintf("client-list-%d", clientPort)), remoteAddr)
-				if err != nil {
-					fmt.Println("Error sending discovery message to the new client:", err)
 				}
 			}
 		}

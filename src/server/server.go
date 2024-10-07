@@ -3,9 +3,12 @@ package server
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
+
+var serverRegisteredClients []int
 
 func StartServer(serverPort int) error {
 	metricsMap := make(map[string]string)
@@ -30,36 +33,49 @@ func StartServer(serverPort int) error {
 			continue
 		}
 
-		metrics := string(buf[:n])
-		if strings.Contains(metrics, "@") {
-			metricsMap[remoteAddr.String()] = metrics
-			fmt.Println(strings.Repeat("=", 40))
-			fmt.Println()
+		message := string(buf[:n])
+		if strings.Contains(message, "new-client-") {
+			port, ok := strings.CutPrefix(message, "new-client-")
+			if !ok {
+				fmt.Println("Prefix not found to cut: ", err)
+			}
+			portCnv, err := strconv.Atoi(port)
+			if err != nil {
+				fmt.Println("Error converting port: ", err)
+				continue
+			}
+			serverRegisteredClients = append(serverRegisteredClients, portCnv)
+		} else {
+			if strings.Contains(message, "@") {
+				metricsMap[remoteAddr.String()] = message
+				fmt.Println(strings.Repeat("=", 40))
+				fmt.Println()
 
-			fmt.Print("\033[H\033[2J")
-			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
+				fmt.Print("\033[H\033[2J")
+				fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
-			for _, metricsData := range metricsMap {
-				formatAndPrintMetrics(metricsData)
+				for _, metricsData := range metricsMap {
+					formatAndPrintMetrics(metricsData)
+				}
+
+				fmt.Println()
+				fmt.Println(strings.Repeat("=", 40))
 			}
 
-			fmt.Println()
-			fmt.Println(strings.Repeat("=", 40))
-		}
+			if !ArrayContains(serverRegisteredClients, serverPort) {
+				serverRegisteredClients = append(serverRegisteredClients, serverPort)
+			}
 
-		if !ArrayContains(Clients, serverPort) {
-			Clients = append(Clients, serverPort)
-		}
-
-		for i := 0; i < len(Clients); i++ {
-			if Clients[i] != serverPort {
-				fmt.Println(Clients[i])
-				_, err := conn.WriteToUDP([]byte(metrics), &net.UDPAddr{
-					Port: Clients[i],
-					IP:   net.ParseIP("127.0.0.1"),
-				})
-				if err != nil {
-					fmt.Printf("Error sending data to client %d: %s", Clients[i], err)
+			for i := 0; i < len(serverRegisteredClients); i++ {
+				if serverRegisteredClients[i] != serverPort {
+					fmt.Println(serverRegisteredClients[i])
+					_, err := conn.WriteToUDP([]byte(message), &net.UDPAddr{
+						Port: serverRegisteredClients[i],
+						IP:   net.ParseIP("127.0.0.1"),
+					})
+					if err != nil {
+						fmt.Printf("Error sending data to client %d: %s", serverRegisteredClients[i], err)
+					}
 				}
 			}
 		}
