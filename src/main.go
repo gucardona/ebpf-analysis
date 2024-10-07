@@ -30,11 +30,6 @@ func main() {
 
 	flag.Parse()
 
-	fmt.Println()
-	fmt.Printf("Server port %d\n", vars.ServerPort)
-	fmt.Printf("Client port %d\n", vars.ClientPort)
-	fmt.Println()
-
 	go func() {
 		if err := server.StartDiscoveryServer(); err != nil {
 			log.Fatalf("Failed to start discovery server: %s", err)
@@ -47,20 +42,16 @@ func main() {
 		}
 	}()
 
-	waitForServer(9999)
+	waitForDiscoveryServer(9999)
 
 	if err := client.StartClient(vars.ServerPort, vars.ClientPort, messageInterval); err != nil {
 		log.Fatalf("Failed to start client: %s", err)
 	}
 }
 
-func waitForServer(port int) {
+func waitForDiscoveryServer(port int) {
 	for {
-		_, err := net.Dial("udp", fmt.Sprintf("127.0.0.1:%d", port))
-		if err == nil {
-			log.Println("Servidor está pronto para aceitar conexões.")
-			break
-		}
+		_, _ = net.Dial("udp", fmt.Sprintf("127.0.0.1:%d", port))
 		time.Sleep(1 * time.Second)
 	}
 }

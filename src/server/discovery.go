@@ -51,7 +51,6 @@ func StartDiscoveryServer() error {
 
 			if !ArrayContains(discoveryClients, port) {
 				discoveryClients = append(discoveryClients, port)
-				fmt.Printf("New client registered: %d\n", port)
 			}
 
 			for _, clientPort := range discoveryClients {

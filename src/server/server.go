@@ -12,7 +12,6 @@ import (
 var (
 	serverRegisteredClients []int
 	clientMessages          = make(map[string]string)
-	serverPortMap           = make(map[string]int)
 )
 
 func StartServer(serverPort int) error {
@@ -53,8 +52,6 @@ func StartServer(serverPort int) error {
 			}
 			if !ArrayContains(serverRegisteredClients, portCnv) {
 				serverRegisteredClients = append(serverRegisteredClients, portCnv)
-				serverPortMap[clientKey] = portCnv
-				fmt.Println(serverPortMap)
 				fmt.Printf("New client registered: %d\n", portCnv)
 			}
 			continue
@@ -110,7 +107,7 @@ func displayAllMetrics() {
 
 	for clientKey, message := range clientMessages {
 		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
-			fmt.Printf("%-30s %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", serverPortMap[clientKey]), formatMetricsForClient(message))
+			fmt.Printf("%-30s %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), formatMetricsForClient(message))
 		} else {
 			fmt.Printf("%-30s %s\n", clientKey, formatMetricsForClient(message))
 		}

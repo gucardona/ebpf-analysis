@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-var ClientAddr *net.UDPAddr
-
 func StartClient(serverPort int, clientPort int, messageInterval time.Duration) error {
 	discoveryAddr := net.UDPAddr{
 		Port: 9999,
@@ -38,17 +36,17 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 		}
 	}()
 
-	serverAddr := net.UDPAddr{
+	serverAddr := &net.UDPAddr{
 		Port: serverPort,
 		IP:   net.ParseIP("127.0.0.1"),
 	}
 
-	ClientAddr = &net.UDPAddr{
+	clientAddr := &net.UDPAddr{
 		IP:   net.ParseIP("127.0.0.1"),
 		Port: clientPort,
 	}
 
-	conn, err := net.DialUDP("udp", ClientAddr, &serverAddr)
+	conn, err := net.DialUDP("udp", clientAddr, serverAddr)
 	if err != nil {
 		return fmt.Errorf("error connecting to server: %s", err)
 	}
@@ -87,7 +85,29 @@ func collectMetrics(metricType string) ([]byte, error) {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
 
-		return out, nil
+		metricTypeStr := ":CPU_METRIC"
+		metricTypeBytes := []byte(metricTypeStr)
+
+		appendedResult := append(out, metricTypeBytes...)
+
+		return appendedResult, nil
+
+	case "packet":
+		out, err := exec.Command(
+			"sudo",
+			"bpftrace",
+			"-e",
+			"tracepoint:net:netif_receive_skb { @[comm] = count(); } interval:s:1 { print(@); clear(@); }").Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to exec command: %s", err)
+		}
+		
+		metricTypeStr := ":PACKET_METRIC"
+		metricTypeBytes := []byte(metricTypeStr)
+
+		appendedResult := append(out, metricTypeBytes...)
+
+		return appendedResult, nil
 
 	default:
 		return nil, fmt.Errorf("unknown metric type: %s", metricType)
