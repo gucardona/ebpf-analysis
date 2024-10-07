@@ -47,7 +47,7 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 		Port: clientPort,
 	}
 
-	conn, err := net.DialUDP("udp", nil, &serverAddr)
+	conn, err := net.DialUDP("udp", clientAddr, &serverAddr)
 	if err != nil {
 		return fmt.Errorf("error connecting to server: %s", err)
 	}
