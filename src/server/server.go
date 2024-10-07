@@ -41,6 +41,7 @@ func StartServer(serverPort int) error {
 		if strings.Contains(message, "new-client-") {
 			port, ok := strings.CutPrefix(message, "new-client-")
 			clientKey = fmt.Sprintf("127.0.0.1:%s", port)
+			fmt.Println(clientKey)
 			if !ok {
 				fmt.Println("Prefix not found to cut:", err)
 				continue
@@ -104,6 +105,8 @@ func displayAllMetrics() {
 	fmt.Println(strings.Repeat("-", 80))
 
 	for clientKey, message := range clientMessages {
+		fmt.Println(clientKey)
+		fmt.Println(fmt.Sprintf("127.0.0.1:%d", vars.ClientPort))
 		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
 			fmt.Printf("%-30s %s\n", clientKey+" (this machine)", formatMetricsForClient(message))
 		} else {
