@@ -110,7 +110,6 @@ func collectMetrics(metricType string) ([]byte, error) {
 		metricTypeBytes := []byte(metricTypeStr)
 
 		appendedResult := append(out, metricTypeBytes...)
-		fmt.Println(appendedResult)
 		return appendedResult, nil
 
 	case "data":
