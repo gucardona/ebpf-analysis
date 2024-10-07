@@ -2,11 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/gucardona/ga-redes-udp/src/client"
 	"github.com/gucardona/ga-redes-udp/src/server"
 	"log"
-	"net"
 	"time"
 )
 
@@ -19,32 +17,24 @@ func main() {
 	flag.IntVar(&serverPort, "port", 8443, "UDP server port")
 	flag.Parse()
 
+	discoveryServer := server.NewDiscoveryServer()
 	go func() {
-		if err := server.StartDiscoveryServer(); err != nil {
+		if err := discoveryServer.Start(); err != nil {
 			log.Fatalf("Failed to start discovery server: %s", err)
 		}
 	}()
 
+	mainServer := server.NewServer(serverPort)
 	go func() {
-		if err := server.StartServer(serverPort); err != nil {
-			log.Fatalf("Failed to start server: %s", err)
+		if err := mainServer.Start(); err != nil {
+			log.Fatalf("Failed to start main server: %s", err)
 		}
 	}()
 
-	waitForServer(9999)
+	// Wait for servers to start
+	time.Sleep(2 * time.Second)
 
 	if err := client.StartClient(serverPort, messageInterval); err != nil {
 		log.Fatalf("Failed to start client: %s", err)
-	}
-}
-
-func waitForServer(port int) {
-	for {
-		_, err := net.Dial("udp", fmt.Sprintf("127.0.0.1:%d", port))
-		if err == nil {
-			log.Println("Servidor está pronto para aceitar conexões.")
-			break
-		}
-		time.Sleep(1 * time.Second)
 	}
 }

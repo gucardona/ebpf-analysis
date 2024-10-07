@@ -1,19 +1,36 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
-	"strconv"
-	"strings"
+	"sync"
+	"time"
 )
 
 const (
-	DiscoveryPort = 9999
+	DiscoveryPort     = 9999
+	HeartbeatInterval = 10 * time.Second
+	ClientTimeout     = 30 * time.Second
 )
 
-var Clients []int
+type Client struct {
+	Port          int
+	LastHeartbeat time.Time
+}
 
-func StartDiscoveryServer() error {
+type DiscoveryServer struct {
+	clients map[int]*Client
+	mutex   sync.RWMutex
+}
+
+func NewDiscoveryServer() *DiscoveryServer {
+	return &DiscoveryServer{
+		clients: make(map[int]*Client),
+	}
+}
+
+func (ds *DiscoveryServer) Start() error {
 	addr := net.UDPAddr{
 		Port: DiscoveryPort,
 		IP:   net.ParseIP("0.0.0.0"),
@@ -21,13 +38,11 @@ func StartDiscoveryServer() error {
 
 	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
-		if strings.Contains(err.Error(), "bind: address already in use") {
-			return nil
-		}
-
 		return fmt.Errorf("error starting discovery server: %s", err)
 	}
 	defer conn.Close()
+
+	go ds.cleanupClients()
 
 	fmt.Println("Discovery server started. Listening for messages...")
 
@@ -40,45 +55,87 @@ func StartDiscoveryServer() error {
 			continue
 		}
 
-		message := string(buf[:n])
-		fmt.Println("Received message:", message)
-		if strings.Contains(message, "register-") {
-			serverPort, ok := strings.CutPrefix(message, "register-")
-			if !ok {
-				fmt.Println("Prefix not found to cut: ", err)
-				continue
-			}
+		var message struct {
+			Type string `json:"type"`
+			Port int    `json:"port"`
+		}
 
-			port, err := strconv.Atoi(serverPort)
-			if err != nil {
-				fmt.Println("Error converting port: ", err)
-				continue
-			}
+		if err := json.Unmarshal(buf[:n], &message); err != nil {
+			fmt.Println("Error parsing message:", err)
+			continue
+		}
 
-			if !ArrayContains(Clients, port) {
-				Clients = append(Clients, port)
-				fmt.Printf("New client registered: %s\n", remoteAddr.String())
-			}
+		switch message.Type {
+		case "register":
+			ds.registerClient(message.Port)
+			ds.sendClientList(conn, remoteAddr)
+		case "heartbeat":
+			ds.updateHeartbeat(message.Port)
+		}
+	}
+}
 
-			for _, clientPort := range Clients {
-				fmt.Println("clients: ", Clients)
-				if clientPort != port {
-					_, err := conn.WriteToUDP([]byte(fmt.Sprintf("new-client-%d", port)), &net.UDPAddr{
-						Port: clientPort,
-						IP:   remoteAddr.IP,
-					})
-					if err != nil {
-						fmt.Println("Error sending discovery message to client:", err)
-					}
-				}
-			}
+func (ds *DiscoveryServer) registerClient(port int) {
+	ds.mutex.Lock()
+	defer ds.mutex.Unlock()
 
-			for _, clientPort := range Clients {
-				_, err := conn.WriteToUDP([]byte(fmt.Sprintf("client-list-%d", clientPort)), remoteAddr)
-				if err != nil {
-					fmt.Println("Error sending discovery message to the new client:", err)
-				}
+	ds.clients[port] = &Client{
+		Port:          port,
+		LastHeartbeat: time.Now(),
+	}
+
+	fmt.Printf("New client registered: %d\n", port)
+}
+
+func (ds *DiscoveryServer) updateHeartbeat(port int) {
+	ds.mutex.Lock()
+	defer ds.mutex.Unlock()
+
+	if client, ok := ds.clients[port]; ok {
+		client.LastHeartbeat = time.Now()
+	}
+}
+
+func (ds *DiscoveryServer) sendClientList(conn *net.UDPConn, addr *net.UDPAddr) {
+	ds.mutex.RLock()
+	defer ds.mutex.RUnlock()
+
+	clientList := make([]int, 0, len(ds.clients))
+	for port := range ds.clients {
+		clientList = append(clientList, port)
+	}
+
+	message := struct {
+		Type    string `json:"type"`
+		Clients []int  `json:"clients"`
+	}{
+		Type:    "client_list",
+		Clients: clientList,
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		fmt.Println("Error marshaling client list:", err)
+		return
+	}
+
+	_, err = conn.WriteToUDP(data, addr)
+	if err != nil {
+		fmt.Println("Error sending client list:", err)
+	}
+}
+
+func (ds *DiscoveryServer) cleanupClients() {
+	for {
+		time.Sleep(HeartbeatInterval)
+
+		ds.mutex.Lock()
+		for port, client := range ds.clients {
+			if time.Since(client.LastHeartbeat) > ClientTimeout {
+				delete(ds.clients, port)
+				fmt.Printf("Client timed out and removed: %d\n", port)
 			}
 		}
+		ds.mutex.Unlock()
 	}
 }
