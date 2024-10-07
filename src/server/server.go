@@ -46,7 +46,7 @@ func StartServer(serverPort int) error {
 			}
 			serverRegisteredClients = append(serverRegisteredClients, portCnv)
 		} else {
-			if strings.Contains(message, "@") {
+			if strings.Contains(message, "probes...") {
 				metricsMap[remoteAddr.String()] = message
 				fmt.Println(strings.Repeat("=", 40))
 				fmt.Println()
@@ -55,9 +55,9 @@ func StartServer(serverPort int) error {
 				fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
 				fmt.Println(metricsMap)
-				//for _, metricsData := range metricsMap {
-				//	formatAndPrintMetrics(metricsData)
-				//}
+				for _, metricsData := range metricsMap {
+					formatAndPrintMetrics(metricsData)
+				}
 
 				fmt.Println()
 				fmt.Println(strings.Repeat("=", 40))
@@ -67,15 +67,15 @@ func StartServer(serverPort int) error {
 				serverRegisteredClients = append(serverRegisteredClients, serverPort)
 			}
 
-			for i := 0; i < len(serverRegisteredClients); i++ {
-				if serverRegisteredClients[i] != serverPort {
-					fmt.Println(serverRegisteredClients[i])
+			for _, clientPort := range serverRegisteredClients {
+				if clientPort != serverPort {
+					fmt.Println("Forwarding to client:", clientPort)
 					_, err := conn.WriteToUDP([]byte(message), &net.UDPAddr{
-						Port: serverRegisteredClients[i],
+						Port: clientPort,
 						IP:   net.ParseIP("127.0.0.1"),
 					})
 					if err != nil {
-						fmt.Printf("Error sending data to client %d: %s", serverRegisteredClients[i], err)
+						fmt.Printf("Error sending data to client %d: %s", clientPort, err)
 					}
 				}
 			}
