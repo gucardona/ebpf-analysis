@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"github.com/gucardona/ga-redes-udp/src/vars"
 	"net"
 	"strconv"
 	"strings"
@@ -107,13 +106,13 @@ func displayAllMetrics() {
 
 	for clientKey, message := range clientMessages {
 		currentTypeMessage, formattedMessage := formatMetricsForClient(message)
-
-		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
-			fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formattedMessage)
-		} else {
-			fmt.Printf("%-30s %s: %s\n", clientKey, currentTypeMessage, formattedMessage)
-		}
-		fmt.Println()
+		println(clientKey, currentTypeMessage, formattedMessage)
+		//if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
+		//	fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formattedMessage)
+		//} else {
+		//	fmt.Printf("%-30s %s: %s\n", clientKey, currentTypeMessage, formattedMessage)
+		//}
+		//fmt.Println()
 	}
 }
 
