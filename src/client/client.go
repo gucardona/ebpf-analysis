@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func StartClient(serverPort int, messageInterval time.Duration) error {
+func StartClient(serverPort int, clientPort int, messageInterval time.Duration) error {
 	discoveryAddr := net.UDPAddr{
 		Port: server.DiscoveryPort,
 		IP:   net.ParseIP("127.0.0.1"),
@@ -40,6 +40,11 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 	serverAddr := net.UDPAddr{
 		Port: serverPort,
 		IP:   net.ParseIP("127.0.0.1"),
+	}
+
+	clientAddr := &net.UDPAddr{
+		IP:   net.ParseIP("127.0.0.1"),
+		Port: clientPort,
 	}
 
 	conn, err := net.DialUDP("udp", nil, &serverAddr)

@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/gucardona/ga-redes-udp/src/vars"
 	"net"
 	"strconv"
 	"strings"
@@ -62,7 +63,7 @@ func StartServer(serverPort int) error {
 
 			clientMessages[clientKey] = message
 
-			fmt.Println(strings.Repeat("=", 40))
+			fmt.Println(strings.Repeat("=", 80))
 			fmt.Println()
 
 			fmt.Print("\033[H\033[2J")
@@ -71,11 +72,10 @@ func StartServer(serverPort int) error {
 			displayAllMetrics()
 
 			fmt.Println()
-			fmt.Println(strings.Repeat("=", 40))
+			fmt.Println(strings.Repeat("=", 80))
 
 			for _, clientPort := range serverRegisteredClients {
 				if clientPort != serverPort && remoteAddr.Port != clientPort {
-					fmt.Printf("Forwarding to client: %d\n", clientPort)
 					_, err := conn.WriteToUDP([]byte(message), &net.UDPAddr{
 						Port: clientPort,
 						IP:   net.ParseIP("127.0.0.1"),
@@ -100,10 +100,14 @@ func ArrayContains(slice []int, item int) bool {
 
 func displayAllMetrics() {
 	fmt.Printf("%-30s %s\n", "Client", "Metric Data")
-	fmt.Println(strings.Repeat("-", 50))
+	fmt.Println(strings.Repeat("-", 80))
 
 	for clientKey, message := range clientMessages {
-		fmt.Printf("%-30s %s\n", clientKey, formatMetricsForClient(message))
+		if clientKey == string(rune(vars.ClientPort)) {
+			fmt.Printf("%-30s %s\n", clientKey+" (this machine)", formatMetricsForClient(message))
+		} else {
+			fmt.Printf("%-30s %s\n", clientKey, formatMetricsForClient(message))
+		}
 	}
 }
 

@@ -39,7 +39,6 @@ func StartDiscoveryServer() error {
 		}
 
 		message := string(buf[:n])
-		fmt.Println("[Discovery] Received message: ", message)
 
 		if strings.Contains(message, "register-") {
 			serverPort, ok := strings.CutPrefix(message, "register-")
