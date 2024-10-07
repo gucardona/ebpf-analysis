@@ -36,16 +36,15 @@ func StartServer(serverPort int) error {
 		}
 
 		message := string(buf[:n])
-		portCnv := vars.ServerPort
+		clientKey := remoteAddr.String()
 
 		if strings.Contains(message, "new-client-") {
 			port, ok := strings.CutPrefix(message, "new-client-")
-
 			if !ok {
 				fmt.Println("Prefix not found to cut:", err)
 				continue
 			}
-			portCnv, err = strconv.Atoi(port)
+			portCnv, err := strconv.Atoi(port)
 			if err != nil {
 				fmt.Println("Error converting port:", err)
 				continue
@@ -56,7 +55,6 @@ func StartServer(serverPort int) error {
 			}
 			continue
 		}
-		clientKey := fmt.Sprintf("127.0.0.1:%d", portCnv)
 
 		if strings.Contains(message, "@") {
 			if previousMsg, exists := clientMessages[clientKey]; exists && previousMsg == message {
