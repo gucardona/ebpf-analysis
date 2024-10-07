@@ -36,10 +36,11 @@ func StartServer(serverPort int) error {
 		}
 
 		message := string(buf[:n])
-		clientKey := remoteAddr.String()
+		var clientKey string
 
 		if strings.Contains(message, "new-client-") {
 			port, ok := strings.CutPrefix(message, "new-client-")
+			clientKey = fmt.Sprintf("127.0.0.1:%s", port)
 			if !ok {
 				fmt.Println("Prefix not found to cut:", err)
 				continue
