@@ -3,17 +3,10 @@ package server
 import (
 	"fmt"
 	"net"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
-var (
-	clientsMutex sync.Mutex
-)
-
-// Inicia o servidor
 func StartServer(serverPort int) error {
 	metricsMap := make(map[string]string)
 
@@ -37,72 +30,52 @@ func StartServer(serverPort int) error {
 			continue
 		}
 
-		message := string(buf[:n])
+		metrics := string(buf[:n])
+		if strings.Contains(metrics, "@") {
+			metricsMap[remoteAddr.String()] = metrics
+			fmt.Println(strings.Repeat("=", 40))
+			fmt.Println()
 
-		// Registrar novos clientes a partir das mensagens de descoberta
-		if strings.HasPrefix(message, "new-client-") {
-			portStr := strings.TrimPrefix(message, "new-client-")
-			port, err := strconv.Atoi(portStr)
-			if err == nil {
-				addClient(port, remoteAddr) // Armazena o endereço do cliente
-				fmt.Printf("Registered new client: %s\n", remoteAddr.String())
+			fmt.Print("\033[H\033[2J")
+			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
+
+			for _, metricsData := range metricsMap {
+				formatAndPrintMetrics(metricsData)
 			}
-		} else if strings.HasPrefix(message, "client-list:") {
-			portStrs := strings.TrimPrefix(message, "client-list:")
-			portList := strings.Split(portStrs, ",")
 
-			for _, portStr := range portList {
-				port, err := strconv.Atoi(strings.TrimSpace(portStr))
-				if err == nil {
-					addClient(port, remoteAddr) // Armazena o endereço do cliente
-					fmt.Printf("Added client from client-list message: %s\n", remoteAddr.String())
-				} else {
-					fmt.Println("Error converting port:", err)
+			fmt.Println()
+			fmt.Println(strings.Repeat("=", 40))
+		}
+
+		if !ArrayContains(Clients, serverPort) {
+			Clients = append(Clients, serverPort)
+		}
+
+		for i := 0; i < len(Clients); i++ {
+			if Clients[i] != serverPort {
+				fmt.Println(Clients[i])
+				_, err := conn.WriteToUDP([]byte(metrics), &net.UDPAddr{
+					Port: Clients[i],
+					IP:   net.ParseIP("127.0.0.1"),
+				})
+				if err != nil {
+					fmt.Printf("Error sending data to client %d: %s", Clients[i], err)
 				}
 			}
 		}
-
-		// Processar métricas
-		if strings.Contains(message, "@") {
-			metricsMap[remoteAddr.String()] = message
-			displayMetrics(metricsMap)
-
-			// Enviar métricas para outros clientes
-			sendMetricsToClients(conn, message, serverPort)
-		}
 	}
 }
 
-// Adiciona um cliente ao mapa de clientes
-func addClient(port int, addr net.Addr) {
-	clientsMutex.Lock()
-	defer clientsMutex.Unlock()
-
-	Clients[port] = *addr.(*net.UDPAddr) // Armazena o endereço do cliente no map
-}
-
-// Exibe as métricas recebidas
-func displayMetrics(metricsMap map[string]string) {
-	fmt.Println(strings.Repeat("=", 40))
-	fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
-
-	for _, metricsData := range metricsMap {
-		formatAndPrintMetrics(metricsData)
-	}
-
-	fmt.Println(strings.Repeat("=", 40))
-}
-
-// Formata e imprime as métricas
 func formatAndPrintMetrics(metricsData string) {
 	fmt.Printf("%-30s %s\n", "Metric", "Count")
 	fmt.Println(strings.Repeat("-", 40))
 
 	trim := strings.TrimSpace(metricsData)
+
 	lines := strings.Split(trim, "\n")
 
 	if len(lines) > 1 {
-		lines = lines[1:] // Ignorar o primeiro item se for uma linha de cabeçalho
+		lines = lines[1:]
 	}
 
 	for _, line := range lines {
@@ -120,19 +93,11 @@ func formatAndPrintMetrics(metricsData string) {
 	}
 }
 
-// Envia métricas para todos os clientes registrados
-func sendMetricsToClients(conn *net.UDPConn, metrics string, serverPort int) {
-	clientsMutex.Lock()
-	defer clientsMutex.Unlock()
-
-	for clientPort, addr := range Clients {
-		if clientPort != serverPort {
-			go func(addr net.UDPAddr, metrics string) {
-				_, err := conn.WriteToUDP([]byte(metrics), &addr)
-				if err != nil {
-					fmt.Printf("Error sending data to client %d: %s\n", clientPort, err)
-				}
-			}(addr, metrics)
+func ArrayContains(slice []int, item int) bool {
+	for _, element := range slice {
+		if element == item {
+			return true
 		}
 	}
+	return false
 }
