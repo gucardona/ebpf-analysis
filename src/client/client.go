@@ -36,6 +36,17 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 		}
 	}()
 
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Select a metric to send:")
+	fmt.Println(" - schp: Tracks the number of times different processes are scheduled by the Linux kernel.")
+	fmt.Println(" - packet: Monitors how many packets are sent/received at the network interface level.")
+	fmt.Println(" - data: Tracks the total amount of data (in bytes) transmitted by network devices.")
+	fmt.Println(" - rtime: This metric provides insights into how much runtime each process is utilizing, in ns.")
+	fmt.Println(" - read: This metric tracks the number of times the read system call is invoked by different processes running on the system.")
+	fmt.Println(" - write: This metric tracks the number of times the write system call is invoked by different processes running on the system.")
+	metricType, _ := reader.ReadString('\n')
+	metricType = strings.TrimSpace(metricType)
+
 	serverAddr := &net.UDPAddr{
 		Port: serverPort,
 		IP:   net.ParseIP("127.0.0.1"),
@@ -51,17 +62,6 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 		return fmt.Errorf("error connecting to server: %s", err)
 	}
 	defer conn.Close()
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Select a metric to send:")
-	fmt.Println(" - schp: Tracks the number of times different processes are scheduled by the Linux kernel.")
-	fmt.Println(" - packet: Monitors how many packets are sent/received at the network interface level.")
-	fmt.Println(" - data: Tracks the total amount of data (in bytes) transmitted by network devices.")
-	fmt.Println(" - rtime: This metric provides insights into how much runtime each process is utilizing, in ns.")
-	fmt.Println(" - read: This metric tracks the number of times the read system call is invoked by different processes running on the system.")
-	fmt.Println(" - write: This metric tracks the number of times the write system call is invoked by different processes running on the system.")
-	metricType, _ := reader.ReadString('\n')
-	metricType = strings.TrimSpace(metricType)
 
 	for {
 		metrics, err := collectMetrics(metricType)

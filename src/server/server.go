@@ -69,6 +69,7 @@ func StartServer(serverPort int) error {
 			fmt.Println()
 
 			fmt.Print("\033[H\033[2J")
+			fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
 			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
 			displayAllMetrics()
