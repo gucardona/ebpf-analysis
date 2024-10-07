@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/gucardona/ga-redes-udp/src/client"
 	"github.com/gucardona/ga-redes-udp/src/vars"
 	"net"
 	"strconv"
@@ -74,14 +75,22 @@ func StartServer(serverPort int) error {
 			fmt.Println()
 			fmt.Println(strings.Repeat("=", 80))
 
-			for _, clientPort := range serverRegisteredClients {
-				if clientPort != serverPort && remoteAddr.Port != clientPort {
-					_, err := conn.WriteToUDP([]byte(message), &net.UDPAddr{
-						Port: clientPort,
+			for _, serverRegisteredPort := range serverRegisteredClients {
+				if serverRegisteredPort != serverPort && remoteAddr.Port != serverRegisteredPort {
+					serverAddr := net.UDPAddr{
+						Port: serverRegisteredPort,
 						IP:   net.ParseIP("127.0.0.1"),
-					})
+					}
+
+					conn, err := net.DialUDP("udp", client.ClientAddr, &serverAddr)
 					if err != nil {
-						fmt.Printf("Error sending data to client %d: %s\n", clientPort, err)
+						return fmt.Errorf("error connecting to server: %s", err)
+					}
+					defer conn.Close()
+
+					_, err = conn.Write([]byte(message))
+					if err != nil {
+						fmt.Printf("Error sending data to client %d: %s\n", serverRegisteredPort, err)
 					}
 				}
 			}
