@@ -2,7 +2,6 @@ package client
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"github.com/gucardona/ga-redes-udp/src/server"
 	"net"
@@ -33,9 +32,8 @@ func StartClient(serverPort int, messageInterval time.Duration) error {
 
 	go func() {
 		for {
-			data, _ := json.Marshal(registerMessage)
-			connDiscovery.Write(data)
-			time.Sleep(1)
+			connDiscovery.Write(registerMessage)
+			time.Sleep(time.Second * 3)
 		}
 	}()
 
