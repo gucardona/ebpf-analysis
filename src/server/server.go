@@ -12,6 +12,8 @@ import (
 var (
 	serverRegisteredClients []int
 	clientMessages          = make(map[string]string)
+	currentType             string
+	currentTypeMessage      string
 )
 
 func StartServer(serverPort int) error {
@@ -64,7 +66,7 @@ func StartServer(serverPort int) error {
 
 			clientMessages[clientKey] = message
 
-			fmt.Println(strings.Repeat("=", 80))
+			fmt.Println(strings.Repeat("=", 150))
 			fmt.Println()
 
 			fmt.Print("\033[H\033[2J")
@@ -73,7 +75,7 @@ func StartServer(serverPort int) error {
 			displayAllMetrics()
 
 			fmt.Println()
-			fmt.Println(strings.Repeat("=", 80))
+			fmt.Println(strings.Repeat("=", 150))
 
 			for _, registeredServerPort := range serverRegisteredClients {
 				if registeredServerPort != serverPort && remoteAddr.Port != registeredServerPort {
@@ -102,14 +104,14 @@ func ArrayContains(slice []int, item int) bool {
 }
 
 func displayAllMetrics() {
-	fmt.Printf("%-30s %s\n", "Client", "Metric Data")
-	fmt.Println(strings.Repeat("-", 80))
+	fmt.Printf("%-30s %s\n", "Metric Type", "Metric Data")
+	fmt.Println(strings.Repeat("-", 150))
 
 	for clientKey, message := range clientMessages {
 		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
-			fmt.Printf("%-30s %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), formatMetricsForClient(message))
+			fmt.Printf("%-30s %s:%s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formatMetricsForClient(message))
 		} else {
-			fmt.Printf("%-30s %s\n", clientKey, formatMetricsForClient(message))
+			fmt.Printf("%-30s %s:%s\n", clientKey, currentTypeMessage, formatMetricsForClient(message))
 		}
 		fmt.Println()
 	}
@@ -120,14 +122,37 @@ func formatMetricsForClient(metricsData string) string {
 
 	lines := strings.Split(trim, "\n")
 
-	fmt.Println(lines)
-
 	if len(lines) > 1 {
 		lines = lines[1:]
 	}
 
 	var formattedMetrics strings.Builder
 	for _, line := range lines {
+		if strings.HasPrefix(line, ":T:") {
+			currentType = strings.TrimSpace(line)
+			currentType = strings.Replace(currentType, ":T:", "", 1)
+			switch currentType {
+			case "SCHEDULE_METRIC":
+				currentTypeMessage = "Kernel Schedule Times"
+				break
+			case "PACKET_METRIC":
+				currentTypeMessage = "Kernel Sent/Received Packets"
+				break
+			case "DATA_METRIC":
+				currentTypeMessage = "Kernel Transmitted Data"
+				break
+			case "RTIME_METRIC":
+				currentTypeMessage = "Kernel Runtime Process (ns)"
+				break
+			case "READ_METRIC":
+				currentTypeMessage = "Kernel Read Times"
+				break
+			case "WRITE_METRIC":
+				currentTypeMessage = "Kernel Write Times"
+				break
+			}
+		}
+
 		nameIndex := strings.Index(line, "@[")
 		quantIndex := strings.Index(line, "]: ")
 

@@ -53,8 +53,13 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 	defer conn.Close()
 
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Select a metric to send (cpu/mem/gpu):")
-	fmt.Println(" - cpu: The command is continuously counting how many times different processes are scheduled by the Linux kernel.")
+	fmt.Println("Select a metric to send:")
+	fmt.Println(" - schp: Tracks the number of times different processes are scheduled by the Linux kernel.")
+	fmt.Println(" - packet: Monitors how many packets are sent/received at the network interface level.")
+	fmt.Println(" - data: Tracks the total amount of data (in bytes) transmitted by network devices.")
+	fmt.Println(" - rtime: This metric provides insights into how much runtime each process is utilizing, in ns.")
+	fmt.Println(" - read: This metric tracks the number of times the read system call is invoked by different processes running on the system.")
+	fmt.Println(" - write: This metric tracks the number of times the write system call is invoked by different processes running on the system.")
 	metricType, _ := reader.ReadString('\n')
 	metricType = strings.TrimSpace(metricType)
 
@@ -75,7 +80,7 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 
 func collectMetrics(metricType string) ([]byte, error) {
 	switch metricType {
-	case "cpu":
+	case "schp":
 		out, err := exec.Command(
 			"sudo",
 			"bpftrace",
@@ -85,7 +90,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
 
-		metricTypeStr := ":CPU_METRIC"
+		metricTypeStr := ":T:SCHEDULE_METRIC"
 		metricTypeBytes := []byte(metricTypeStr)
 
 		appendedResult := append(out, metricTypeBytes...)
@@ -101,7 +106,55 @@ func collectMetrics(metricType string) ([]byte, error) {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
 
-		metricTypeStr := ":PACKET_METRIC"
+		metricTypeStr := ":T:PACKET_METRIC"
+		metricTypeBytes := []byte(metricTypeStr)
+
+		appendedResult := append(out, metricTypeBytes...)
+		return appendedResult, nil
+
+	case "data":
+		out, err := exec.Command(
+			"sudo",
+			"bpftrace",
+			"-e",
+			"tracepoint:net:net_dev_xmit { @[comm] = sum(args->len); } interval:s:1 { print(@); clear(@); }").Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to exec command: %s", err)
+		}
+
+		metricTypeStr := ":T:DATA_METRIC"
+		metricTypeBytes := []byte(metricTypeStr)
+
+		appendedResult := append(out, metricTypeBytes...)
+		return appendedResult, nil
+
+	case "rtime":
+		out, err := exec.Command(
+			"sudo",
+			"bpftrace",
+			"-e",
+			"tracepoint:sched:sched_stat_runtime { @[comm] = sum(args->runtime); } interval:s:1 { print(@); clear(@); }").Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to exec command: %s", err)
+		}
+
+		metricTypeStr := ":T:RTIME_METRIC"
+		metricTypeBytes := []byte(metricTypeStr)
+
+		appendedResult := append(out, metricTypeBytes...)
+		return appendedResult, nil
+
+	case "read":
+		out, err := exec.Command(
+			"sudo",
+			"bpftrace",
+			"-e",
+			"tracepoint:syscalls:sys_enter_read { @[comm] = count(); } interval:s:1 { print(@); clear(@); }").Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to exec command: %s", err)
+		}
+
+		metricTypeStr := ":T:WRITE_METRIC"
 		metricTypeBytes := []byte(metricTypeStr)
 
 		appendedResult := append(out, metricTypeBytes...)
