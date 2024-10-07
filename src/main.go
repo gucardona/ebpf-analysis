@@ -42,16 +42,19 @@ func main() {
 		}
 	}()
 
-	waitForDiscoveryServer(9999)
+	waitForServer(9999)
 
 	if err := client.StartClient(vars.ServerPort, vars.ClientPort, messageInterval); err != nil {
 		log.Fatalf("Failed to start client: %s", err)
 	}
 }
 
-func waitForDiscoveryServer(port int) {
+func waitForServer(port int) {
 	for {
-		_, _ = net.Dial("udp", fmt.Sprintf("127.0.0.1:%d", port))
+		_, err := net.Dial("udp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err == nil {
+			break
+		}
 		time.Sleep(1 * time.Second)
 	}
 }
