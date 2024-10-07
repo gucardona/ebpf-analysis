@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gucardona/ga-redes-udp/src/client"
 	"github.com/gucardona/ga-redes-udp/src/server"
+	"github.com/gucardona/ga-redes-udp/src/server/discovery"
 	"github.com/gucardona/ga-redes-udp/src/vars"
 	"log"
 	"math/rand"
@@ -34,9 +35,9 @@ func main() {
 	fmt.Printf("Server port %d\n", vars.ServerPort)
 	fmt.Printf("Client port %d\n", vars.ClientPort)
 	fmt.Println()
-	
+
 	go func() {
-		if err := server.StartDiscoveryServer(); err != nil {
+		if err := discovery.StartDiscoveryServer(); err != nil {
 			log.Fatalf("Failed to start discovery server: %s", err)
 		}
 	}()

@@ -1,7 +1,8 @@
-package server
+package discovery
 
 import (
 	"fmt"
+	"github.com/gucardona/ga-redes-udp/src/server"
 	"net"
 	"strconv"
 	"strings"
@@ -53,7 +54,7 @@ func StartDiscoveryServer() error {
 				continue
 			}
 
-			if !ArrayContains(discoveryClients, port) {
+			if !server.ArrayContains(discoveryClients, port) {
 				discoveryClients = append(discoveryClients, port)
 				fmt.Printf("New client registered: %d\n", port)
 			}
