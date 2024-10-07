@@ -12,7 +12,7 @@ import (
 var (
 	serverRegisteredClients []int
 	clientMessages          = make(map[string]string)
-	serverPortMap           = make(map[string]string)
+	serverPortMap           = make(map[string]int)
 )
 
 func StartServer(serverPort int) error {
@@ -41,7 +41,6 @@ func StartServer(serverPort int) error {
 
 		if strings.Contains(message, "new-client-") {
 			port, ok := strings.CutPrefix(message, "new-client-")
-			serverPortMap[clientKey] = port
 
 			if !ok {
 				fmt.Println("Prefix not found to cut:", err)
@@ -54,6 +53,7 @@ func StartServer(serverPort int) error {
 			}
 			if !ArrayContains(serverRegisteredClients, portCnv) {
 				serverRegisteredClients = append(serverRegisteredClients, portCnv)
+				serverPortMap[clientKey] = portCnv
 				fmt.Printf("New client registered: %d\n", portCnv)
 			}
 			continue
@@ -109,7 +109,7 @@ func displayAllMetrics() {
 
 	for clientKey, message := range clientMessages {
 		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
-			fmt.Printf("%-30s %s\n", serverPortMap[clientKey]+" (this machine)", formatMetricsForClient(message))
+			fmt.Printf("%-30s %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", serverPortMap[clientKey]), formatMetricsForClient(message))
 		} else {
 			fmt.Printf("%-30s %s\n", serverPortMap[clientKey], formatMetricsForClient(message))
 		}
