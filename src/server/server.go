@@ -74,14 +74,14 @@ func StartServer(serverPort int) error {
 			fmt.Println()
 			fmt.Println(strings.Repeat("=", 80))
 
-			for _, clientPort := range serverRegisteredClients {
-				if clientPort != serverPort && remoteAddr.Port != clientPort {
+			for _, registeredServerPort := range serverRegisteredClients {
+				if registeredServerPort != serverPort && remoteAddr.Port != registeredServerPort {
 					_, err := conn.WriteToUDP([]byte(message), &net.UDPAddr{
-						Port: clientPort,
+						Port: registeredServerPort,
 						IP:   net.ParseIP("127.0.0.1"),
 					})
 					if err != nil {
-						fmt.Printf("Error sending data to client %d: %s\n", clientPort, err)
+						fmt.Printf("Error sending data to client %d: %s\n", registeredServerPort, err)
 					}
 				}
 			}
