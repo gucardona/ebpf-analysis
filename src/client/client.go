@@ -16,6 +16,27 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 		IP:   net.ParseIP("127.0.0.1"),
 	}
 
+	serverAddr := &net.UDPAddr{
+		Port: serverPort,
+		IP:   net.ParseIP("127.0.0.1"),
+	}
+
+	clientAddr := &net.UDPAddr{
+		IP:   net.ParseIP("127.0.0.1"),
+		Port: clientPort,
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Select a metric to send:")
+	fmt.Println(" - schp: Tracks the number of times different processes are scheduled by the Linux kernel.")
+	fmt.Println(" - packet: Monitors how many packets are sent/received at the network interface level.")
+	fmt.Println(" - data: Tracks the total amount of data (in bytes) transmitted by network devices.")
+	fmt.Println(" - rtime: This metric provides insights into how much runtime each process is utilizing, in ns.")
+	fmt.Println(" - read: This metric tracks the number of times the read system call is invoked by different processes running on the system.")
+	fmt.Println(" - write: This metric tracks the number of times the write system call is invoked by different processes running on the system.")
+	metricType, _ := reader.ReadString('\n')
+	metricType = strings.TrimSpace(metricType)
+
 	connDiscovery, err := net.DialUDP("udp", nil, &discoveryAddr)
 	if err != nil {
 		return fmt.Errorf("error connecting to discovery server: %s", err)
@@ -35,27 +56,6 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 			time.Sleep(time.Second * 3)
 		}
 	}()
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Select a metric to send:")
-	fmt.Println(" - schp: Tracks the number of times different processes are scheduled by the Linux kernel.")
-	fmt.Println(" - packet: Monitors how many packets are sent/received at the network interface level.")
-	fmt.Println(" - data: Tracks the total amount of data (in bytes) transmitted by network devices.")
-	fmt.Println(" - rtime: This metric provides insights into how much runtime each process is utilizing, in ns.")
-	fmt.Println(" - read: This metric tracks the number of times the read system call is invoked by different processes running on the system.")
-	fmt.Println(" - write: This metric tracks the number of times the write system call is invoked by different processes running on the system.")
-	metricType, _ := reader.ReadString('\n')
-	metricType = strings.TrimSpace(metricType)
-
-	serverAddr := &net.UDPAddr{
-		Port: serverPort,
-		IP:   net.ParseIP("127.0.0.1"),
-	}
-
-	clientAddr := &net.UDPAddr{
-		IP:   net.ParseIP("127.0.0.1"),
-		Port: clientPort,
-	}
 
 	conn, err := net.DialUDP("udp", clientAddr, serverAddr)
 	if err != nil {
@@ -150,6 +150,22 @@ func collectMetrics(metricType string) ([]byte, error) {
 			"bpftrace",
 			"-e",
 			"tracepoint:syscalls:sys_enter_read { @[comm] = count(); } interval:s:1 { print(@); clear(@); exit(); }").Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to exec command: %s", err)
+		}
+
+		metricTypeStr := ":T:READ_METRIC"
+		metricTypeBytes := []byte(metricTypeStr)
+
+		appendedResult := append(out, metricTypeBytes...)
+		return appendedResult, nil
+
+	case "write":
+		out, err := exec.Command(
+			"sudo",
+			"bpftrace",
+			"-e",
+			"tracepoint:syscalls:sys_enter_write { @[comm] = count(); } interval:s:1 { print(@); clear(@); exit(); }").Output()
 		if err != nil {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
