@@ -22,14 +22,19 @@ func main() {
 	clientPortRangeMin := 1001
 	clientPortRangeMax := 9999
 
-	randomServerPort := rand.Intn(serverPortRangeMax-serverPortRangeMin+1) + serverPortRangeMin
-	randomClientPort := rand.Intn(clientPortRangeMax-clientPortRangeMin+1) + clientPortRangeMin
+	vars.ServerPort = rand.Intn(serverPortRangeMax-serverPortRangeMin+1) + serverPortRangeMin
+	vars.ClientPort = rand.Intn(clientPortRangeMax-clientPortRangeMin+1) + clientPortRangeMin
 
-	flag.IntVar(&vars.ServerPort, "server-port", randomServerPort, "UDP server port")
-	flag.IntVar(&vars.ClientPort, "client-port", randomClientPort, "UDP client port")
+	flag.IntVar(&vars.ServerPort, "server-port", vars.ServerPort, "UDP server port")
+	flag.IntVar(&vars.ClientPort, "client-port", vars.ClientPort, "UDP client port")
 
 	flag.Parse()
 
+	fmt.Println()
+	fmt.Printf("Server port %d\n", vars.ServerPort)
+	fmt.Printf("Client port %d\n", vars.ClientPort)
+	fmt.Println()
+	
 	go func() {
 		if err := server.StartDiscoveryServer(); err != nil {
 			log.Fatalf("Failed to start discovery server: %s", err)
