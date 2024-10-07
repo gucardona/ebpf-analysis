@@ -79,8 +79,6 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 }
 
 func collectMetrics(metricType string) ([]byte, error) {
-	fmt.Println(metricType)
-
 	switch metricType {
 	case "schp":
 		out, err := exec.Command(
@@ -99,13 +97,11 @@ func collectMetrics(metricType string) ([]byte, error) {
 		return appendedResult, nil
 
 	case "packet":
-		fmt.Println(metricType)
 		out, err := exec.Command(
 			"sudo",
 			"bpftrace",
 			"-e",
-			"tracepoint:net:netif_receive_skb { @[comm] = count(); } interval:s:1 { print(@); clear(@); }").Output()
-		fmt.Println(out)
+			"tracepoint:net:netif_receive_skb { @[comm] = count(); } interval:s:1 { print(@); clear(@); exit(); }").Output()
 		if err != nil {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
@@ -122,7 +118,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 			"sudo",
 			"bpftrace",
 			"-e",
-			"tracepoint:net:net_dev_xmit { @[comm] = sum(args->len); } interval:s:1 { print(@); clear(@); }").Output()
+			"tracepoint:net:net_dev_xmit { @[comm] = sum(args->len); } interval:s:1 { print(@); clear(@); exit(); }").Output()
 		if err != nil {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
@@ -138,7 +134,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 			"sudo",
 			"bpftrace",
 			"-e",
-			"tracepoint:sched:sched_stat_runtime { @[comm] = sum(args->runtime); } interval:s:1 { print(@); clear(@); }").Output()
+			"tracepoint:sched:sched_stat_runtime { @[comm] = sum(args->runtime); } interval:s:1 { print(@); clear(@); exit(); }").Output()
 		if err != nil {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
@@ -154,7 +150,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 			"sudo",
 			"bpftrace",
 			"-e",
-			"tracepoint:syscalls:sys_enter_read { @[comm] = count(); } interval:s:1 { print(@); clear(@); }").Output()
+			"tracepoint:syscalls:sys_enter_read { @[comm] = count(); } interval:s:1 { print(@); clear(@); exit(); }").Output()
 		if err != nil {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
