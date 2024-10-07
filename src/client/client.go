@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func StartClient(port int) {
+func StartClient(port int, messageInterval time.Duration) error {
 	addr := net.UDPAddr{
 		Port: 9999,
 		IP:   net.ParseIP("127.0.0.1"),
@@ -14,8 +14,7 @@ func StartClient(port int) {
 
 	conn, err := net.DialUDP("udp", nil, &addr)
 	if err != nil {
-		fmt.Println("Error starting client:", err)
-		return
+		return fmt.Errorf("error starting client: %s", err)
 	}
 	defer conn.Close()
 
@@ -29,7 +28,7 @@ func StartClient(port int) {
 		if err != nil {
 			fmt.Println("Error sending metrics:", err)
 		}
-		time.Sleep(5 * time.Second) // Envia a cada 5 segundos
+		time.Sleep(messageInterval) // Envia a cada 5 segundos
 	}
 }
 
