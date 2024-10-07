@@ -30,6 +30,11 @@ func main() {
 
 	flag.Parse()
 
+	fmt.Println()
+	fmt.Printf("Server port %d\n", vars.ServerPort)
+	fmt.Printf("Client port %d\n", vars.ClientPort)
+	fmt.Println()
+
 	go func() {
 		if err := server.StartDiscoveryServer(); err != nil {
 			log.Fatalf("Failed to start discovery server: %s", err)

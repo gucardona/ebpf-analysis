@@ -12,6 +12,7 @@ import (
 var (
 	serverRegisteredClients []int
 	clientMessages          = make(map[string]string)
+	serverPortMap           = make(map[string]string)
 )
 
 func StartServer(serverPort int) error {
@@ -40,6 +41,8 @@ func StartServer(serverPort int) error {
 
 		if strings.Contains(message, "new-client-") {
 			port, ok := strings.CutPrefix(message, "new-client-")
+			serverPortMap[clientKey] = port
+
 			if !ok {
 				fmt.Println("Prefix not found to cut:", err)
 				continue
@@ -76,10 +79,12 @@ func StartServer(serverPort int) error {
 
 			for _, registeredServerPort := range serverRegisteredClients {
 				if registeredServerPort != serverPort && remoteAddr.Port != registeredServerPort {
-					_, err := conn.WriteToUDP([]byte(message), &net.UDPAddr{
+					forwardAddr := &net.UDPAddr{
 						Port: registeredServerPort,
 						IP:   net.ParseIP("127.0.0.1"),
-					})
+					}
+
+					_, err := conn.WriteToUDP([]byte(message), forwardAddr)
 					if err != nil {
 						fmt.Printf("Error sending data to client %d: %s\n", registeredServerPort, err)
 					}
@@ -104,9 +109,9 @@ func displayAllMetrics() {
 
 	for clientKey, message := range clientMessages {
 		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
-			fmt.Printf("%-30s %s\n", clientKey+" (this machine)", formatMetricsForClient(message))
+			fmt.Printf("%-30s %s\n", serverPortMap[clientKey]+" (this machine)", formatMetricsForClient(message))
 		} else {
-			fmt.Printf("%-30s %s\n", clientKey, formatMetricsForClient(message))
+			fmt.Printf("%-30s %s\n", serverPortMap[clientKey], formatMetricsForClient(message))
 		}
 		fmt.Println()
 	}
