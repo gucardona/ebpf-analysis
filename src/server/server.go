@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/gucardona/ga-redes-udp/src/vars"
 	"net"
 	"strconv"
 	"strings"
@@ -65,7 +66,7 @@ func StartServer(serverPort int) error {
 			fmt.Println(strings.Repeat("=", 150))
 			fmt.Println()
 
-			fmt.Print("\033[H\033[2J")
+			//fmt.Print("\033[H\033[2J")
 			fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
 			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
@@ -87,6 +88,8 @@ func StartServer(serverPort int) error {
 					}
 				}
 			}
+			
+			delete(clientMessages, clientKey)
 		}
 	}
 }
@@ -106,13 +109,13 @@ func displayAllMetrics() {
 
 	for clientKey, message := range clientMessages {
 		currentTypeMessage, formattedMessage := formatMetricsForClient(message)
-		println(clientKey, currentTypeMessage, formattedMessage)
-		//if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
-		//	fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formattedMessage)
-		//} else {
-		//	fmt.Printf("%-30s %s: %s\n", clientKey, currentTypeMessage, formattedMessage)
-		//}
-		//fmt.Println()
+		fmt.Println(clientMessages)
+		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
+			fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formattedMessage)
+		} else {
+			fmt.Printf("%-30s %s: %s\n", clientKey, currentTypeMessage, formattedMessage)
+		}
+		fmt.Println()
 	}
 }
 
