@@ -54,7 +54,6 @@ func StartServer(serverPort int) error {
 			}
 			if !ArrayContains(serverRegisteredClients, portCnv) {
 				serverRegisteredClients = append(serverRegisteredClients, portCnv)
-				fmt.Printf("New client registered: %d\n", portCnv)
 			}
 			continue
 		}
