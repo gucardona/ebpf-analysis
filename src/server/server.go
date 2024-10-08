@@ -135,7 +135,7 @@ func displayAllMetrics() {
 
 func formatMetricsForClient(metricsData string) (string, string) {
 	var currentTypeMessage string
-
+	fmt.Println(metricsData)
 	trim := strings.TrimSpace(metricsData)
 
 	lines := strings.Split(trim, "\n")
