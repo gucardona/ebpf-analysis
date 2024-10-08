@@ -135,7 +135,6 @@ func displayAllMetrics() {
 
 func formatMetricsForClient(metricsData string) (string, string) {
 	var currentTypeMessage string
-	fmt.Println(metricsData)
 	trim := strings.TrimSpace(metricsData)
 
 	lines := strings.Split(trim, "\n")
@@ -146,8 +145,11 @@ func formatMetricsForClient(metricsData string) (string, string) {
 
 	var formattedMetrics strings.Builder
 	for _, line := range lines {
-		if strings.HasPrefix(line, ":T:") && strings.HasSuffix(line, ":RESEND") {
-			currentType := strings.Replace(line, ":RESEND", "", 1)
+		if strings.HasPrefix(line, ":T:") {
+			var currentType string
+			if strings.HasSuffix(line, ":RESEND") {
+				currentType = strings.Replace(line, ":RESEND", "", 1)
+			}
 			currentType = strings.Replace(line, ":T:", "", 1)
 			currentType = strings.TrimSpace(currentType)
 
