@@ -6,7 +6,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var (
@@ -50,6 +49,7 @@ func StartServer(serverPort int) error {
 				fmt.Println("Error converting port:", err)
 				continue
 			}
+			fmt.Println(portCnv)
 			if !ArrayContains(serverRegisteredClients, portCnv) {
 				serverRegisteredClients = append(serverRegisteredClients, portCnv)
 			}
@@ -67,13 +67,13 @@ func StartServer(serverPort int) error {
 			fmt.Println()
 
 			//fmt.Print("\033[H\033[2J")
-			fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
-			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
+			//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
+			//fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
-			displayAllMetrics()
+			//displayAllMetrics()
 
-			fmt.Println()
-			fmt.Println(strings.Repeat("=", 150))
+			//fmt.Println()
+			//fmt.Println(strings.Repeat("=", 150))
 
 			for _, registeredServerPort := range serverRegisteredClients {
 				if registeredServerPort != serverPort && remoteAddr.Port != registeredServerPort {
@@ -102,8 +102,6 @@ func ArrayContains(slice []int, item int) bool {
 }
 
 func displayAllMetrics() {
-	fmt.Println(serverRegisteredClients)
-	fmt.Println(clientMessages)
 	fmt.Printf("%-30s %s\n", "Metric Type", "Metric Data")
 	fmt.Println(strings.Repeat("-", 150))
 
