@@ -6,11 +6,21 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"time"
 )
 
 func StartClient(serverPort int, clientPort int, messageInterval time.Duration) error {
+	go func() {
+		// Graceful shutdown
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		<-c
+		fmt.Println("Shutting down client gracefully...")
+		os.Exit(0)
+	}()
+
 	discoveryAddr := net.UDPAddr{
 		Port: 9999,
 		IP:   net.ParseIP("127.0.0.1"),

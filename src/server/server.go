@@ -6,10 +6,12 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 var (
+	mu                      sync.Mutex
 	serverRegisteredClients []int
 	clientMessages          = make(map[string]string)
 )
@@ -36,61 +38,69 @@ func StartServer(serverPort int) error {
 		}
 
 		message := string(buf[:n])
-		clientKey := remoteAddr.String()
 
-		if strings.Contains(message, "new-client-") {
-			port, ok := strings.CutPrefix(message, "new-client-")
-
-			if !ok {
-				fmt.Println("Prefix not found to cut:", err)
-				continue
-			}
-			portCnv, err := strconv.Atoi(port)
-			if err != nil {
-				fmt.Println("Error converting port:", err)
-				continue
-			}
-			fmt.Println(portCnv)
-			if !ArrayContains(serverRegisteredClients, portCnv) {
-				serverRegisteredClients = append(serverRegisteredClients, portCnv)
-			}
+		if strings.HasPrefix(message, "new-client-") {
+			handleNewClient(message)
 			continue
 		}
 
 		if strings.Contains(message, "@") {
-			clientMessages[clientKey] = message
-
-			fmt.Println(strings.Repeat("=", 150))
-			fmt.Println()
-
-			fmt.Print("\033[H\033[2J")
-			//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
-			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
-
-			displayAllMetrics()
-
-			fmt.Println()
-			fmt.Println(strings.Repeat("=", 150))
-
-			go func() {
-				for _, registeredServerPort := range serverRegisteredClients {
-					if registeredServerPort != serverPort && remoteAddr.Port != registeredServerPort {
-						forwardAddr := &net.UDPAddr{
-							Port: registeredServerPort,
-							IP:   net.ParseIP("127.0.0.1"),
-						}
-
-						_, err := conn.WriteToUDP([]byte(message), forwardAddr)
-						if err != nil {
-							fmt.Printf("Error sending data to client %d: %s\n", registeredServerPort, err)
-						}
-					}
-				}
-			}()
-
+			handleClientMessage(conn, remoteAddr, message)
 		}
 	}
+}
 
+func handleNewClient(message string) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	port, ok := strings.CutPrefix(message, "new-client-")
+	if !ok {
+		fmt.Println("Prefix not found to cut:", message)
+		return
+	}
+
+	portCnv, err := strconv.Atoi(port)
+	if err != nil {
+		fmt.Println("Error converting port:", err)
+		return
+	}
+
+	if !ArrayContains(serverRegisteredClients, portCnv) {
+		serverRegisteredClients = append(serverRegisteredClients, portCnv)
+	}
+}
+
+func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message string) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	clientKey := remoteAddr.String()
+	clientMessages[clientKey] = message
+
+	fmt.Print("\033[H\033[2J")
+	//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
+	fmt.Println(strings.Repeat("=", 150))
+	fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
+	displayAllMetrics()
+	fmt.Println(strings.Repeat("=", 150))
+
+	go forwardMessageToClients(conn, message, remoteAddr.Port)
+}
+
+func forwardMessageToClients(conn *net.UDPConn, message string, senderPort int) {
+	for _, registeredServerPort := range serverRegisteredClients {
+		if registeredServerPort != senderPort {
+			forwardAddr := &net.UDPAddr{
+				Port: registeredServerPort,
+				IP:   net.ParseIP("127.0.0.1"),
+			}
+			_, err := conn.WriteToUDP([]byte(message), forwardAddr)
+			if err != nil {
+				fmt.Printf("Error sending data to client %d: %s\n", registeredServerPort, err)
+			}
+		}
+	}
 }
 
 func ArrayContains(slice []int, item int) bool {
