@@ -146,6 +146,7 @@ func formatMetricsForClient(metricsData string) (string, string) {
 	var formattedMetrics strings.Builder
 	for _, line := range lines {
 		if strings.HasPrefix(line, ":T:") {
+			fmt.Println(line)
 			var currentType string
 			if strings.HasSuffix(line, ":RESEND") {
 				currentType = strings.Replace(line, ":RESEND", "", 1)
