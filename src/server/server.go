@@ -85,17 +85,19 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 	displayAllMetrics()
 	fmt.Println(strings.Repeat("=", 150))
 
-	forwardMessageToClients(conn, message, remoteAddr.Port)
+	forwardMessageToClients(conn, remoteAddr, message, remoteAddr.Port)
 }
 
-func forwardMessageToClients(conn *net.UDPConn, message string, senderPort int) {
+func forwardMessageToClients(conn *net.UDPConn, remoteAddr *net.UDPAddr, message string, senderPort int) {
 	fmt.Println(">>> vars.ServerPort: ", vars.ServerPort)
 	fmt.Println(">>> vars.ClientPort: ", vars.ClientPort)
 	fmt.Println(">>> senderPort ", senderPort)
+	fmt.Println(remoteAddr.String())
 
 	i := 0
 	for _, serverRegisteredClientPort := range serverRegisteredClients {
-		if serverRegisteredClientPort != vars.ServerPort && serverRegisteredClientPort != vars.ClientPort {
+		serverRegisteredClientsAddr := fmt.Sprintf("127.0.0.1:%d", serverRegisteredClients)
+		if serverRegisteredClientsAddr != remoteAddr.String() && serverRegisteredClientPort != vars.ServerPort && serverRegisteredClientPort != vars.ClientPort {
 			forwardAddr := &net.UDPAddr{
 				Port: serverRegisteredClientPort,
 				IP:   net.ParseIP("127.0.0.1"),
