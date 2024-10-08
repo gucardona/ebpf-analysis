@@ -62,20 +62,22 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 		return fmt.Errorf("error connecting to server: %s", err)
 	}
 	defer conn.Close()
+	go func() {
+		for {
+			metrics, err := collectMetrics(metricType)
+			if err != nil {
+				fmt.Println("Error collecting metrics:", err)
+			}
 
-	for {
-		metrics, err := collectMetrics(metricType)
-		if err != nil {
-			fmt.Println("Error collecting metrics:", err)
+			_, err = conn.Write(metrics)
+			if err != nil {
+				return
+			}
+
+			time.Sleep(messageInterval)
 		}
-
-		_, err = conn.Write(metrics)
-		if err != nil {
-			return fmt.Errorf("error sending data: %s", err)
-		}
-
-		time.Sleep(messageInterval)
-	}
+	}()
+	return fmt.Errorf("failed to start client")
 }
 
 func collectMetrics(metricType string) ([]byte, error) {

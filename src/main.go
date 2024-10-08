@@ -17,8 +17,6 @@ const (
 )
 
 func main() {
-	c := cron.New()
-
 	serverPortRangeMin := 1001
 	serverPortRangeMax := 9999
 	clientPortRangeMin := 1001
