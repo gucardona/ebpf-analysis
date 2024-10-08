@@ -124,6 +124,7 @@ func displayAllMetrics() {
 
 	for clientKey, message := range clientMessages {
 		currentTypeMessage, formattedMessage := formatMetricsForClient(message)
+		fmt.Println(currentTypeMessage)
 		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
 			fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formattedMessage)
 		} else {
@@ -151,9 +152,9 @@ func formatMetricsForClient(metricsData string) (string, string) {
 			if strings.Contains(line, ":RESEND") {
 				currentType = strings.Replace(line, ":RESEND", "", 1)
 			}
-			fmt.Println(currentType)
-			currentType = strings.Replace(line, ":T:", "", 1)
 			currentType = strings.TrimSpace(currentType)
+			currentType = strings.Replace(line, ":T:", "", 1)
+			fmt.Println(currentType)
 
 			switch currentType {
 			case "SCHEDULE_METRIC":
