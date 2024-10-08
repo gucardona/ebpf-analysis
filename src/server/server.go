@@ -124,7 +124,6 @@ func displayAllMetrics() {
 
 	for clientKey, message := range clientMessages {
 		currentTypeMessage, formattedMessage := formatMetricsForClient(message)
-		fmt.Println(currentTypeMessage)
 		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
 			fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formattedMessage)
 		} else {
