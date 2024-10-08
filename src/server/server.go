@@ -148,13 +148,10 @@ func formatMetricsForClient(metricsData string) (string, string) {
 	for _, line := range lines {
 		if strings.HasPrefix(line, ":T:") {
 			currentType := line
-			fmt.Println(currentType)
 			if strings.Contains(currentType, ":RESEND") {
 				currentType = strings.Replace(currentType, ":RESEND", "", 1)
-				fmt.Println(currentType)
 			}
 			currentType = strings.Replace(currentType, ":T:", "", 1)
-			fmt.Println(currentType)
 
 			switch currentType {
 			case "SCHEDULE_METRIC":
