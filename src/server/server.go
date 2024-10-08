@@ -85,24 +85,29 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 	displayAllMetrics()
 	fmt.Println(strings.Repeat("=", 150))
 
-	forwardMessageToClients(conn, remoteAddr, message, remoteAddr.Port)
+	if !strings.Contains(message, ":RESEND") {
+		forwardMessageToClients(conn, message, remoteAddr.Port)
+	}
 }
 
-func forwardMessageToClients(conn *net.UDPConn, remoteAddr *net.UDPAddr, message string, senderPort int) {
+func forwardMessageToClients(conn *net.UDPConn, message string, senderPort int) {
 	fmt.Println(">>> vars.ServerPort: ", vars.ServerPort)
 	fmt.Println(">>> vars.ClientPort: ", vars.ClientPort)
 	fmt.Println(">>> senderPort ", senderPort)
-	fmt.Println(remoteAddr.String())
 
 	i := 0
+
 	for _, serverRegisteredClientPort := range serverRegisteredClients {
-		serverRegisteredClientsAddr := fmt.Sprintf("127.0.0.1:%d", serverRegisteredClients)
-		if serverRegisteredClientsAddr != remoteAddr.String() && serverRegisteredClientPort != vars.ServerPort && serverRegisteredClientPort != vars.ClientPort {
+		if serverRegisteredClientPort != vars.ServerPort && serverRegisteredClientPort != vars.ClientPort {
 			forwardAddr := &net.UDPAddr{
 				Port: serverRegisteredClientPort,
 				IP:   net.ParseIP("127.0.0.1"),
 			}
-			_, err := conn.WriteToUDP([]byte(message), forwardAddr)
+
+			resend := []byte(":RESEND")
+			messageBytes := append([]byte(message), resend...)
+
+			_, err := conn.WriteToUDP(messageBytes, forwardAddr)
 			if err != nil {
 				fmt.Printf("Error sending data to client: %s\n", err)
 			}
