@@ -85,12 +85,12 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 	displayAllMetrics()
 	fmt.Println(strings.Repeat("=", 150))
 
-	go forwardMessageToClients(conn, message, remoteAddr.Port)
+	forwardMessageToClients(conn, message, remoteAddr.Port)
 }
 
 func forwardMessageToClients(conn *net.UDPConn, message string, senderPort int) {
 	for _, registeredServerPort := range serverRegisteredClients {
-		if registeredServerPort != senderPort {
+		if registeredServerPort != senderPort && registeredServerPort != vars.ServerPort && registeredServerPort != vars.ClientPort {
 			fmt.Println("registered: ", registeredServerPort)
 			fmt.Println("sender: ", senderPort)
 
