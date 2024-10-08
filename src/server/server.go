@@ -89,6 +89,15 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 }
 
 func forwardMessageToClients(conn *net.UDPConn, message string, senderPort int) {
+	fmt.Println(">>> vars.ServerPort: ", vars.ServerPort)
+	fmt.Println(">>> vars.ClientPort: ", vars.ClientPort)
+	fmt.Println(">>> senderPort ", senderPort)
+
+	i := 0
+	for _, serverRegisteredClientPort := range serverRegisteredClients {
+		fmt.Println(">>> ", i, " ", serverRegisteredClientPort)
+		i++
+	}
 	forwardAddr := &net.UDPAddr{
 		Port: senderPort,
 		IP:   net.ParseIP("127.0.0.1"),
@@ -97,7 +106,6 @@ func forwardMessageToClients(conn *net.UDPConn, message string, senderPort int) 
 	if err != nil {
 		fmt.Printf("Error sending data to client: %s\n", err)
 	}
-	
 }
 
 func ArrayContains(slice []int, item int) bool {
