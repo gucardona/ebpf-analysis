@@ -6,17 +6,14 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 var (
 	serverRegisteredClients []int
 	clientMessages          = make(map[string]string)
-	mu                      sync.Mutex // Mutex for synchronizing access to client messages
 )
 
-// StartServer starts the UDP server on the specified port.
 func StartServer(serverPort int) error {
 	addr := net.UDPAddr{
 		Port: serverPort,
@@ -41,86 +38,57 @@ func StartServer(serverPort int) error {
 		message := string(buf[:n])
 		clientKey := remoteAddr.String()
 
-		// Register new clients
-		if isNewClient(message) {
-			port, _ := extractPort(message)
-			registerClient(port)
+		if strings.Contains(message, "new-client-") {
+			port, ok := strings.CutPrefix(message, "new-client-")
+
+			if !ok {
+				fmt.Println("Prefix not found to cut:", err)
+				continue
+			}
+			portCnv, err := strconv.Atoi(port)
+			if err != nil {
+				fmt.Println("Error converting port:", err)
+				continue
+			}
+			fmt.Println(portCnv)
+			if !ArrayContains(serverRegisteredClients, portCnv) {
+				serverRegisteredClients = append(serverRegisteredClients, portCnv)
+			}
 			continue
 		}
 
-		// Process and print metrics
-		if isMetricMessage(message) {
+		if strings.Contains(message, "@") {
 			clientMessages[clientKey] = message
-			printMetrics()
-			sendMetricsToClients(conn, message, serverPort)
-		}
-	}
-}
 
-// isNewClient checks if the message indicates a new client.
-func isNewClient(message string) bool {
-	return strings.Contains(message, "new-client-")
-}
+			fmt.Println(strings.Repeat("=", 150))
+			fmt.Println()
 
-// extractPort extracts the client port from the message.
-func extractPort(message string) (int, bool) {
-	portStr, ok := strings.CutPrefix(message, "new-client-")
-	if !ok {
-		return 0, false
-	}
-	port, err := strconv.Atoi(portStr)
-	if err != nil {
-		fmt.Println("Error converting port:", err)
-		return 0, false
-	}
-	return port, true
-}
+			fmt.Print("\033[H\033[2J")
+			//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
+			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
-// registerClient registers a new client port.
-func registerClient(port int) {
-	mu.Lock()
-	defer mu.Unlock()
+			displayAllMetrics()
 
-	if !ArrayContains(serverRegisteredClients, port) {
-		serverRegisteredClients = append(serverRegisteredClients, port)
-		fmt.Printf("Client registered: %d\n", port)
-	}
-}
+			fmt.Println()
+			fmt.Println(strings.Repeat("=", 150))
 
-// isMetricMessage checks if the message contains metric data.
-func isMetricMessage(message string) bool {
-	return strings.Contains(message, "@")
-}
+			for _, registeredServerPort := range serverRegisteredClients {
+				if registeredServerPort != serverPort && remoteAddr.Port != registeredServerPort {
+					forwardAddr := &net.UDPAddr{
+						Port: registeredServerPort,
+						IP:   net.ParseIP("127.0.0.1"),
+					}
 
-// printMetrics formats and displays the collected metrics.
-func printMetrics() {
-	fmt.Println(strings.Repeat("=", 150))
-	fmt.Println()
-	fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
-	displayAllMetrics()
-	fmt.Println()
-	fmt.Println(strings.Repeat("=", 150))
-}
-
-// sendMetricsToClients sends the received metrics to all registered clients.
-func sendMetricsToClients(conn *net.UDPConn, message string, serverPort int) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	for _, registeredServerPort := range serverRegisteredClients {
-		if registeredServerPort != serverPort {
-			forwardAddr := &net.UDPAddr{
-				Port: registeredServerPort,
-				IP:   net.ParseIP("127.0.0.1"),
-			}
-			if _, err := conn.WriteToUDP([]byte(message), forwardAddr); err != nil {
-				fmt.Printf("Error sending data to client %d: %s\n", registeredServerPort, err)
+					_, err := conn.WriteToUDP([]byte(message), forwardAddr)
+					if err != nil {
+						fmt.Printf("Error sending data to client %d: %s\n", registeredServerPort, err)
+					}
+				}
 			}
 		}
 	}
 }
 
-// ArrayContains checks if a slice contains a specific integer.
 func ArrayContains(slice []int, item int) bool {
 	for _, element := range slice {
 		if element == item {
@@ -130,7 +98,6 @@ func ArrayContains(slice []int, item int) bool {
 	return false
 }
 
-// displayAllMetrics displays all collected metrics.
 func displayAllMetrics() {
 	fmt.Printf("%-30s %s\n", "Metric Type", "Metric Data")
 	fmt.Println(strings.Repeat("-", 150))
@@ -138,7 +105,7 @@ func displayAllMetrics() {
 	for clientKey, message := range clientMessages {
 		currentTypeMessage, formattedMessage := formatMetricsForClient(message)
 		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
-			fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1:%d (this machine)", vars.ClientPort), currentTypeMessage, formattedMessage)
+			fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formattedMessage)
 		} else {
 			fmt.Printf("%-30s %s: %s\n", clientKey, currentTypeMessage, formattedMessage)
 		}
@@ -146,58 +113,52 @@ func displayAllMetrics() {
 	}
 }
 
-// formatMetricsForClient formats the metrics data for a specific client.
 func formatMetricsForClient(metricsData string) (string, string) {
 	var currentTypeMessage string
-	lines := strings.Split(strings.TrimSpace(metricsData), "\n")
+
+	trim := strings.TrimSpace(metricsData)
+
+	lines := strings.Split(trim, "\n")
 
 	if len(lines) > 1 {
-		lines = lines[1:] // Skip the first line if needed
+		lines = lines[1:]
 	}
 
 	var formattedMetrics strings.Builder
 	for _, line := range lines {
 		if strings.HasPrefix(line, ":T:") {
-			currentTypeMessage = getMetricType(line)
+			currentType := strings.TrimSpace(line)
+			currentType = strings.Replace(currentType, ":T:", "", 1)
+			switch currentType {
+			case "SCHEDULE_METRIC":
+				currentTypeMessage = "Kernel Schedule Times"
+				break
+			case "PACKET_METRIC":
+				currentTypeMessage = "Kernel Sent/Received Packets"
+				break
+			case "DATA_METRIC":
+				currentTypeMessage = "Kernel Transmitted Data"
+				break
+			case "RTIME_METRIC":
+				currentTypeMessage = "Kernel Runtime Process (ns)"
+				break
+			case "READ_METRIC":
+				currentTypeMessage = "Kernel Read Times"
+				break
+			case "WRITE_METRIC":
+				currentTypeMessage = "Kernel Write Times"
+				break
+			}
 		}
 
-		if name, quant := extractNameAndQuantity(line); name != "" && quant != "" {
+		nameIndex := strings.Index(line, "@[")
+		quantIndex := strings.Index(line, "]: ")
+
+		if nameIndex != -1 && quantIndex != -1 {
+			name := line[nameIndex+2 : quantIndex]
+			quant := line[quantIndex+3:]
 			formattedMetrics.WriteString(fmt.Sprintf("%s: %s, ", name, quant))
 		}
 	}
-
 	return currentTypeMessage, strings.TrimSuffix(formattedMetrics.String(), ", ")
-}
-
-// getMetricType maps the metric type from the line.
-func getMetricType(line string) string {
-	currentType := strings.TrimSpace(strings.Replace(line, ":T:", "", 1))
-	switch currentType {
-	case "SCHEDULE_METRIC":
-		return "Kernel Schedule Times"
-	case "PACKET_METRIC":
-		return "Kernel Sent/Received Packets"
-	case "DATA_METRIC":
-		return "Kernel Transmitted Data"
-	case "RTIME_METRIC":
-		return "Kernel Runtime Process (ns)"
-	case "READ_METRIC":
-		return "Kernel Read Times"
-	case "WRITE_METRIC":
-		return "Kernel Write Times"
-	default:
-		return ""
-	}
-}
-
-// extractNameAndQuantity extracts the name and quantity from a line.
-func extractNameAndQuantity(line string) (string, string) {
-	nameIndex := strings.Index(line, "@[")
-	quantIndex := strings.Index(line, "]: ")
-	if nameIndex != -1 && quantIndex != -1 {
-		name := line[nameIndex+2 : quantIndex]
-		quant := line[quantIndex+3:]
-		return name, quant
-	}
-	return "", ""
 }
