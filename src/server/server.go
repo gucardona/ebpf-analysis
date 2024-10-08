@@ -28,51 +28,51 @@ func StartServer(serverPort int) error {
 
 	buf := make([]byte, 2048)
 
-	go func() {
-		for {
-			n, remoteAddr, err := conn.ReadFromUDP(buf)
+	for {
+		n, remoteAddr, err := conn.ReadFromUDP(buf)
+		if err != nil {
+			fmt.Println("Error receiving data:", err)
+			continue
+		}
+
+		message := string(buf[:n])
+		clientKey := remoteAddr.String()
+
+		if strings.Contains(message, "new-client-") {
+			port, ok := strings.CutPrefix(message, "new-client-")
+
+			if !ok {
+				fmt.Println("Prefix not found to cut:", err)
+				continue
+			}
+			portCnv, err := strconv.Atoi(port)
 			if err != nil {
-				fmt.Println("Error receiving data:", err)
+				fmt.Println("Error converting port:", err)
 				continue
 			}
-
-			message := string(buf[:n])
-			clientKey := remoteAddr.String()
-
-			if strings.Contains(message, "new-client-") {
-				port, ok := strings.CutPrefix(message, "new-client-")
-
-				if !ok {
-					fmt.Println("Prefix not found to cut:", err)
-					continue
-				}
-				portCnv, err := strconv.Atoi(port)
-				if err != nil {
-					fmt.Println("Error converting port:", err)
-					continue
-				}
-				fmt.Println(portCnv)
-				if !ArrayContains(serverRegisteredClients, portCnv) {
-					serverRegisteredClients = append(serverRegisteredClients, portCnv)
-				}
-				continue
+			fmt.Println(portCnv)
+			if !ArrayContains(serverRegisteredClients, portCnv) {
+				serverRegisteredClients = append(serverRegisteredClients, portCnv)
 			}
+			continue
+		}
 
-			if strings.Contains(message, "@") {
-				clientMessages[clientKey] = message
+		if strings.Contains(message, "@") {
+			clientMessages[clientKey] = message
 
-				fmt.Println(strings.Repeat("=", 150))
-				fmt.Println()
+			fmt.Println(strings.Repeat("=", 150))
+			fmt.Println()
 
-				fmt.Print("\033[H\033[2J")
-				//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
-				fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
+			fmt.Print("\033[H\033[2J")
+			//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
+			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
-				displayAllMetrics()
+			displayAllMetrics()
 
-				fmt.Println()
-				fmt.Println(strings.Repeat("=", 150))
+			fmt.Println()
+			fmt.Println(strings.Repeat("=", 150))
 
+			go func() {
 				for _, registeredServerPort := range serverRegisteredClients {
 					if registeredServerPort != serverPort && remoteAddr.Port != registeredServerPort {
 						forwardAddr := &net.UDPAddr{
@@ -86,11 +86,11 @@ func StartServer(serverPort int) error {
 						}
 					}
 				}
-			}
+			}()
+
 		}
-	}()
-	
-	return fmt.Errorf("failed to start server")
+	}
+
 }
 
 func ArrayContains(slice []int, item int) bool {
