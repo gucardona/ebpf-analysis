@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"github.com/gucardona/ga-redes-udp/src/client"
 	"github.com/gucardona/ga-redes-udp/src/vars"
 	"net"
 	"strconv"
@@ -11,7 +10,8 @@ import (
 )
 
 var (
-	clientMessages = make(map[string]string)
+	serverRegisteredClients []int
+	clientMessages          = make(map[string]string)
 )
 
 func StartServer(serverPort int) error {
@@ -50,15 +50,17 @@ func StartServer(serverPort int) error {
 				fmt.Println("Error converting port:", err)
 				continue
 			}
-
-			if !ArrayContains(client.ServerRegisteredClients, portCnv) {
-				client.ServerRegisteredClients = append(client.ServerRegisteredClients, portCnv)
+			fmt.Println(portCnv)
+			if !ArrayContains(serverRegisteredClients, portCnv) {
+				serverRegisteredClients = append(serverRegisteredClients, portCnv)
 			}
 			continue
 		}
 
 		if strings.Contains(message, "@") {
 			if previousMsg, exists := clientMessages[clientKey]; exists && previousMsg == message {
+				fmt.Println("previous: ", previousMsg)
+				fmt.Println("message: ", message)
 				continue
 			}
 
@@ -68,13 +70,27 @@ func StartServer(serverPort int) error {
 			fmt.Println()
 
 			fmt.Print("\033[H\033[2J")
-			fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
+			//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
 			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
 
 			displayAllMetrics()
 
 			fmt.Println()
 			fmt.Println(strings.Repeat("=", 150))
+
+			for _, registeredServerPort := range serverRegisteredClients {
+				if registeredServerPort != serverPort && remoteAddr.Port != registeredServerPort {
+					forwardAddr := &net.UDPAddr{
+						Port: registeredServerPort,
+						IP:   net.ParseIP("127.0.0.1"),
+					}
+
+					_, err := conn.WriteToUDP([]byte(message), forwardAddr)
+					if err != nil {
+						fmt.Printf("Error sending data to client %d: %s\n", registeredServerPort, err)
+					}
+				}
+			}
 		}
 	}
 }

@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-var ServerRegisteredClients []int
-
 func StartClient(serverPort int, clientPort int, messageInterval time.Duration) error {
 	discoveryAddr := net.UDPAddr{
 		Port: 9999,
@@ -74,20 +72,6 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 		_, err = conn.Write(metrics)
 		if err != nil {
 			return fmt.Errorf("error sending data: %s", err)
-		}
-
-		for _, registeredServerPort := range ServerRegisteredClients {
-			if registeredServerPort != serverPort {
-				forwardAddr := &net.UDPAddr{
-					Port: registeredServerPort,
-					IP:   net.ParseIP("127.0.0.1"),
-				}
-
-				_, err := conn.WriteToUDP(metrics, forwardAddr)
-				if err != nil {
-					fmt.Printf("Error sending data to client %d: %s\n", registeredServerPort, err)
-				}
-			}
 		}
 
 		time.Sleep(messageInterval)
@@ -186,7 +170,7 @@ func collectMetrics(metricType string) ([]byte, error) {
 			return nil, fmt.Errorf("failed to exec command: %s", err)
 		}
 
-		metricTypeStr := ":T:WRITE_METRIC"
+		metricTypeStr := ":T:READ_METRIC"
 		metricTypeBytes := []byte(metricTypeStr)
 
 		appendedResult := append(out, metricTypeBytes...)
