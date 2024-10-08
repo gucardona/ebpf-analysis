@@ -81,7 +81,7 @@ func registerClient(port int) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if !arrayContains(serverRegisteredClients, port) {
+	if !ArrayContains(serverRegisteredClients, port) {
 		serverRegisteredClients = append(serverRegisteredClients, port)
 		fmt.Printf("Client registered: %d\n", port)
 	}
@@ -120,8 +120,8 @@ func sendMetricsToClients(conn *net.UDPConn, message string, serverPort int) {
 	}
 }
 
-// arrayContains checks if a slice contains a specific integer.
-func arrayContains(slice []int, item int) bool {
+// ArrayContains checks if a slice contains a specific integer.
+func ArrayContains(slice []int, item int) bool {
 	for _, element := range slice {
 		if element == item {
 			return true
