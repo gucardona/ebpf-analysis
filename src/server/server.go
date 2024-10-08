@@ -150,10 +150,10 @@ func formatMetricsForClient(metricsData string) (string, string) {
 			currentType := line
 			fmt.Println(currentType)
 			if strings.Contains(currentType, ":RESEND") {
-				currentType = strings.Replace(line, ":RESEND", "", 1)
+				currentType = strings.Replace(currentType, ":RESEND", "", 1)
 				fmt.Println(currentType)
 			}
-			currentType = strings.Replace(line, ":T:", "", 1)
+			currentType = strings.Replace(currentType, ":T:", "", 1)
 			fmt.Println(currentType)
 
 			switch currentType {
