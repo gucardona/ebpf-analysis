@@ -134,19 +134,19 @@ func displayAllMetrics() {
 }
 
 func formatMetricsForClient(metricsData string) (string, string) {
-	var currentTypeMessage string
-	fmt.Println(metricsData)
 	trim := strings.TrimSpace(metricsData)
-
 	lines := strings.Split(trim, "\n")
 
 	if len(lines) > 1 {
 		lines = lines[1:]
 	}
 
+	var currentTypeMessage string
 	var formattedMetrics strings.Builder
-	for _, line := range lines {
-		if strings.HasPrefix(line, ":T:") {
+	if strings.Contains(metricsData, ":T:") {
+		var line string
+
+		for _, line = range lines {
 			currentType := strings.Replace(line, ":T:", "", 1)
 			currentType = strings.TrimSpace(currentType)
 
