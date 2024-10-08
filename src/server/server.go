@@ -89,16 +89,15 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 }
 
 func forwardMessageToClients(conn *net.UDPConn, message string, senderPort int) {
-			forwardAddr := &net.UDPAddr{
-				Port: senderPort,
-				IP:   net.ParseIP("127.0.0.1"),
-			}
-			_, err := conn.WriteToUDP([]byte(message), forwardAddr)
-			if err != nil {
-				fmt.Printf("Error sending data to client: %s\n", err)
-			}
-
+	forwardAddr := &net.UDPAddr{
+		Port: senderPort,
+		IP:   net.ParseIP("127.0.0.1"),
 	}
+	_, err := conn.WriteToUDP([]byte(message), forwardAddr)
+	if err != nil {
+		fmt.Printf("Error sending data to client: %s\n", err)
+	}
+	
 }
 
 func ArrayContains(slice []int, item int) bool {
