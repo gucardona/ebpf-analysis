@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"strconv"
 	"time"
 )
 
@@ -32,6 +33,7 @@ func main() {
 
 	go func() {
 		if err := server.StartDiscoveryServer(); err != nil {
+			delete(server.ClientMessages, strconv.Itoa(vars.ClientPort))
 			log.Fatalf("Failed to start discovery server: %s", err)
 		}
 	}()

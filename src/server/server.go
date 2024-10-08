@@ -13,7 +13,7 @@ import (
 var (
 	mu                      sync.Mutex
 	serverRegisteredClients []int
-	clientMessages          = make(map[string]string)
+	ClientMessages          = make(map[string]string)
 )
 
 func StartServer(serverPort int) error {
@@ -76,7 +76,7 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 	defer mu.Unlock()
 
 	clientKey := remoteAddr.String()
-	clientMessages[clientKey] = message
+	ClientMessages[clientKey] = message
 
 	fmt.Print("\033[H\033[2J")
 	//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
@@ -122,7 +122,7 @@ func displayAllMetrics() {
 	fmt.Printf("%-30s %s\n", "Metric Type", "Metric Data")
 	fmt.Println(strings.Repeat("-", 150))
 
-	for clientKey, message := range clientMessages {
+	for clientKey, message := range ClientMessages {
 		currentTypeMessage, formattedMessage := formatMetricsForClient(message)
 		if clientKey == fmt.Sprintf("127.0.0.1:%d", vars.ClientPort) {
 			fmt.Printf("%-30s %s: %s\n", fmt.Sprintf("127.0.0.1%d (this machine)", vars.ClientPort), currentTypeMessage, formattedMessage)
