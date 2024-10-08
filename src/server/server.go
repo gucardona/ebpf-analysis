@@ -91,12 +91,6 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 }
 
 func forwardMessageToClients(conn *net.UDPConn, message string, senderPort int) {
-	fmt.Println(">>> vars.ServerPort: ", vars.ServerPort)
-	fmt.Println(">>> vars.ClientPort: ", vars.ClientPort)
-	fmt.Println(">>> senderPort ", senderPort)
-
-	i := 0
-
 	for _, serverRegisteredClientPort := range serverRegisteredClients {
 		if serverRegisteredClientPort != vars.ServerPort && serverRegisteredClientPort != vars.ClientPort {
 			forwardAddr := &net.UDPAddr{
@@ -112,9 +106,6 @@ func forwardMessageToClients(conn *net.UDPConn, message string, senderPort int) 
 				fmt.Printf("Error sending data to client: %s\n", err)
 			}
 		}
-
-		fmt.Println(">>> ", i, " ", serverRegisteredClientPort)
-		i++
 	}
 }
 
@@ -156,8 +147,9 @@ func formatMetricsForClient(metricsData string) (string, string) {
 	var formattedMetrics strings.Builder
 	for _, line := range lines {
 		if strings.HasPrefix(line, ":T:") {
-			currentType := strings.TrimSpace(line)
-			currentType = strings.Replace(currentType, ":T:", "", 1)
+			currentType := strings.Replace(line, ":T:", "", 1)
+			currentType = strings.TrimSpace(currentType)
+
 			switch currentType {
 			case "SCHEDULE_METRIC":
 				currentTypeMessage = "Kernel Schedule Times"
