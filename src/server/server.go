@@ -72,11 +72,9 @@ func StartServer(serverPort int) error {
 
 				fmt.Println()
 				fmt.Println(strings.Repeat("=", 150))
-			}
 
-			go func() {
 				for _, registeredServerPort := range serverRegisteredClients {
-					if registeredServerPort != serverPort {
+					if registeredServerPort != serverPort && remoteAddr.Port != registeredServerPort {
 						forwardAddr := &net.UDPAddr{
 							Port: registeredServerPort,
 							IP:   net.ParseIP("127.0.0.1"),
@@ -88,10 +86,10 @@ func StartServer(serverPort int) error {
 						}
 					}
 				}
-			}()
+			}
 		}
 	}()
-
+	
 	return fmt.Errorf("failed to start server")
 }
 
