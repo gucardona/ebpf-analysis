@@ -102,7 +102,7 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 	fmt.Print("\033[H\033[2J")
 	//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
 	fmt.Println(strings.Repeat("=", 150))
-	fmt.Printf("Last update: %s%-30s\n\n", time.Now().Format(time.RFC3339), vars.MessageInterval)
+	fmt.Printf("Last update: %-30s%s\n\n", time.Now().Format(time.RFC3339), fmt.Sprintf("Interval: %s", vars.MessageInterval))
 	displayAllMetrics()
 	fmt.Println(strings.Repeat("=", 150))
 
