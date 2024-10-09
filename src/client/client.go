@@ -83,6 +83,8 @@ func StartClient(serverPort int, clientPort int, messageInterval time.Duration) 
 		if err != nil {
 			return fmt.Errorf("error sending data: %s", err)
 		}
+
+		time.Sleep(messageInterval)
 	}
 }
 

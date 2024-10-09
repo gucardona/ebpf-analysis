@@ -75,13 +75,9 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 	mu.Lock()
 	defer mu.Unlock()
 
-	futureTime := time.Now().Add(5 * time.Second)
-	duration := time.Until(futureTime)
-	time.Sleep(duration)
-
 	clientKey := remoteAddr.String()
 	ClientMessages[clientKey] = message
-	
+
 	fmt.Print("\033[H\033[2J")
 	//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
 	fmt.Println(strings.Repeat("=", 150))
