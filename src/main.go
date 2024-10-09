@@ -33,7 +33,7 @@ func main() {
 
 	go func() {
 		if err := server.StartDiscoveryServer(); err != nil {
-			delete(server.ClientMessages, strconv.Itoa(vars.ClientPort))
+			delete(server.ClientMessages, fmt.Sprintf("127.0.0.1:%s", strconv.Itoa(vars.ClientPort)))
 			log.Fatalf("Failed to start discovery server: %s", err)
 		}
 	}()
