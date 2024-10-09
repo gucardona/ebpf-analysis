@@ -78,6 +78,10 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 	clientKey := remoteAddr.String()
 	ClientMessages[clientKey] = message
 
+	futureTime := time.Now().Add(5 * time.Second)
+	duration := time.Until(futureTime)
+	time.Sleep(duration)
+
 	fmt.Print("\033[H\033[2J")
 	//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
 	fmt.Println(strings.Repeat("=", 150))
@@ -119,10 +123,6 @@ func ArrayContains(slice []int, item int) bool {
 }
 
 func displayAllMetrics() {
-	futureTime := time.Now().Add(5 * time.Second)
-	duration := time.Until(futureTime)
-
-	time.Sleep(duration)
 	fmt.Printf("%-30s %s\n", "Metric Type", "Metric Data")
 	fmt.Println(strings.Repeat("-", 150))
 
