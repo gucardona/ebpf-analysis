@@ -56,19 +56,23 @@ func StartServer(serverPort int) error {
 }
 
 func handleNewInterval(message string) {
-	port, ok := strings.CutPrefix(message, "new-interval-")
+	interval, ok := strings.CutPrefix(message, "new-interval-")
 	if !ok {
 		fmt.Println("Prefix not found to cut:", message)
 		return
 	}
 
-	newInterval, err := strconv.Atoi(port)
+	newInterval, err := strconv.Atoi(interval)
 	if err != nil {
 		fmt.Println("Error converting port:", err)
 		return
 	}
 
-	vars.MessageInterval = time.Duration(newInterval) * time.Second
+	newIntervalDur := time.Duration(newInterval)
+
+	if newIntervalDur != vars.MessageInterval {
+		vars.MessageInterval = newIntervalDur
+	}
 }
 
 func handleNewClient(message string) {
