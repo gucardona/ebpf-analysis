@@ -39,6 +39,11 @@ func StartServer(serverPort int) error {
 
 		message := string(buf[:n])
 
+		if strings.HasPrefix(message, "new-interval-") {
+			handleNewClient(message)
+			continue
+		}
+
 		if strings.HasPrefix(message, "new-client-") {
 			handleNewClient(message)
 			continue
@@ -48,6 +53,22 @@ func StartServer(serverPort int) error {
 			handleClientMessage(conn, remoteAddr, message)
 		}
 	}
+}
+
+func HandleNewInterval(message string) {
+	port, ok := strings.CutPrefix(message, "new-interval-")
+	if !ok {
+		fmt.Println("Prefix not found to cut:", message)
+		return
+	}
+
+	newInterval, err := strconv.Atoi(port)
+	if err != nil {
+		fmt.Println("Error converting port:", err)
+		return
+	}
+
+	vars.MessageInterval = time.Duration(newInterval) * time.Second
 }
 
 func handleNewClient(message string) {
@@ -81,7 +102,7 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 	fmt.Print("\033[H\033[2J")
 	//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
 	fmt.Println(strings.Repeat("=", 150))
-	fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
+	fmt.Printf("Last update: %s%-30s\n\n", time.Now().Format(time.RFC3339), vars.MessageInterval)
 	displayAllMetrics()
 	fmt.Println(strings.Repeat("=", 150))
 

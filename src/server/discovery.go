@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/gucardona/ga-redes-udp/src/vars"
 	"net"
 	"strconv"
 	"strings"
@@ -61,6 +62,14 @@ func StartDiscoveryServer() error {
 					})
 					if err != nil {
 						fmt.Println("Error sending discovery message to client:", err)
+					}
+
+					_, err = conn.WriteToUDP([]byte(fmt.Sprintf("new-interval-%d", vars.MessageInterval)), &net.UDPAddr{
+						Port: clientPort,
+						IP:   remoteAddr.IP,
+					})
+					if err != nil {
+						fmt.Println("Error sending new interval message to client:", err)
 					}
 				}
 			}

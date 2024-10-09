@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"github.com/gucardona/ga-redes-udp/src/client"
@@ -9,12 +10,11 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"os"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
-)
-
-const (
-	messageInterval = 5 * time.Second
 )
 
 func main() {
@@ -32,8 +32,35 @@ func main() {
 	flag.Parse()
 
 	go func() {
+		reader := bufio.NewReader(os.Stdin)
+
+		for {
+			input, err := reader.ReadString('\n')
+			if err != nil {
+				continue
+			}
+			input = strings.TrimSpace(input)
+			r := regexp.MustCompile(`:\d+`)
+			newIntervalStr := r.FindString(input)
+
+			newIntervalStr, found := strings.CutPrefix(newIntervalStr, ":")
+			if !found {
+				continue
+			}
+
+			newIntervalSec, err := strconv.Atoi(newIntervalStr)
+			if err != nil {
+				continue
+			}
+
+			newInterval := time.Duration(newIntervalSec) * time.Second
+
+			vars.MessageInterval = newInterval
+		}
+	}()
+
+	go func() {
 		if err := server.StartDiscoveryServer(); err != nil {
-			delete(server.ClientMessages, fmt.Sprintf("127.0.0.1:%s", strconv.Itoa(vars.ClientPort)))
 			log.Fatalf("Failed to start discovery server: %s", err)
 		}
 	}()
@@ -46,7 +73,7 @@ func main() {
 
 	waitForServer(9999)
 
-	if err := client.StartClient(vars.ServerPort, vars.ClientPort, messageInterval); err != nil {
+	if err := client.StartClient(vars.ServerPort, vars.ClientPort, vars.MessageInterval); err != nil {
 		log.Fatalf("Failed to start client: %s", err)
 	}
 }
