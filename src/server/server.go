@@ -78,19 +78,23 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 	clientKey := remoteAddr.String()
 	ClientMessages[clientKey] = message
 
-	futureTime := time.Now().Add(5 * time.Second)
-	duration := time.Until(futureTime)
-	time.Sleep(duration)
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 
-	fmt.Print("\033[H\033[2J")
-	//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
-	fmt.Println(strings.Repeat("=", 150))
-	fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
-	displayAllMetrics()
-	fmt.Println(strings.Repeat("=", 150))
+	for {
+		select {
+		case <-ticker.C:
+			fmt.Print("\033[H\033[2J")
+			//fmt.Printf(string([]byte{0x1b, '[', '3', 'J'}))
+			fmt.Println(strings.Repeat("=", 150))
+			fmt.Printf("Last update: %s\n\n", time.Now().Format(time.RFC3339))
+			displayAllMetrics()
+			fmt.Println(strings.Repeat("=", 150))
 
-	if !strings.Contains(message, ":RESEND") {
-		forwardMessageToClients(conn, message)
+			if !strings.Contains(message, ":RESEND") {
+				forwardMessageToClients(conn, message)
+			}
+		}
 	}
 }
 
