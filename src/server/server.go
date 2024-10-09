@@ -40,7 +40,7 @@ func StartServer(serverPort int) error {
 		message := string(buf[:n])
 
 		if strings.HasPrefix(message, "new-interval-") {
-			handleNewClient(message)
+			handleNewInterval(message)
 			continue
 		}
 
@@ -55,7 +55,7 @@ func StartServer(serverPort int) error {
 	}
 }
 
-func HandleNewInterval(message string) {
+func handleNewInterval(message string) {
 	port, ok := strings.CutPrefix(message, "new-interval-")
 	if !ok {
 		fmt.Println("Prefix not found to cut:", message)
