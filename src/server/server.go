@@ -86,11 +86,11 @@ func handleClientMessage(conn *net.UDPConn, remoteAddr *net.UDPAddr, message str
 	fmt.Println(strings.Repeat("=", 150))
 
 	if !strings.Contains(message, ":RESEND") {
-		forwardMessageToClients(conn, message, remoteAddr.Port)
+		forwardMessageToClients(conn, message)
 	}
 }
 
-func forwardMessageToClients(conn *net.UDPConn, message string, senderPort int) {
+func forwardMessageToClients(conn *net.UDPConn, message string) {
 	for _, serverRegisteredClientPort := range serverRegisteredClients {
 		if serverRegisteredClientPort != vars.ServerPort && serverRegisteredClientPort != vars.ClientPort {
 			forwardAddr := &net.UDPAddr{
@@ -119,6 +119,10 @@ func ArrayContains(slice []int, item int) bool {
 }
 
 func displayAllMetrics() {
+	futureTime := time.Now().Add(5 * time.Second)
+	duration := time.Until(futureTime)
+
+	time.Sleep(duration)
 	fmt.Printf("%-30s %s\n", "Metric Type", "Metric Data")
 	fmt.Println(strings.Repeat("-", 150))
 
