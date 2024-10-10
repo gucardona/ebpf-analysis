@@ -69,7 +69,6 @@ func handleNewInterval(message string) {
 	}
 
 	newIntervalDur := time.Duration(newInterval)
-	fmt.Println(newIntervalDur)
 
 	if newIntervalDur != vars.MessageInterval {
 		vars.MessageInterval = newIntervalDur
